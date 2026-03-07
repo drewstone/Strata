@@ -951,8 +951,9 @@ function App() {
             </section>
           ) : (
             <>
+            <section className="table-shell">
               {selectedTableProfile ? (
-                <section className="table-focus-panel">
+                <div className="table-focus-panel">
                   <div className="table-focus-header">
                     <div>
                       <p className="top-rank">Selected market</p>
@@ -970,10 +971,9 @@ function App() {
                   <p className="meta">
                     Strongest modeled factors: {topStrengths(selectedTableProfile, strategy).join(' + ')}
                   </p>
-                </section>
+                </div>
               ) : null}
 
-            <section className="table-shell">
               <table className="country-table">
                 <thead>
                   <tr>
