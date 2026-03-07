@@ -667,10 +667,10 @@ li:first-child {
 
 .country-table th {
   font-size: 0.6875rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   background: var(--surface-2);
   position: sticky;
   top: 0;
@@ -830,6 +830,7 @@ li:first-child {
 }
 
 .research-trigger {
+  grid-template-columns: 1fr 1fr 1fr auto;
   align-items: end;
 }
 
@@ -840,10 +841,11 @@ li:first-child {
 
 .research-run-btn {
   height: 2.25rem;
-  border: 1px solid var(--accent);
+  padding: 0 1.25rem;
+  border: 1px solid var(--border-hover);
   border-radius: 4px;
-  background: var(--accent-dim);
-  color: var(--accent);
+  background: var(--surface-2);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -852,7 +854,8 @@ li:first-child {
 }
 
 .research-run-btn:hover:not(:disabled) {
-  background: rgba(196, 153, 60, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .research-run-btn:disabled {

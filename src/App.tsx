@@ -910,7 +910,7 @@ function App() {
                       key={`ring-${level}`}
                       points={ringPoints}
                       fill="none"
-                      stroke="rgba(255,255,255,0.06)"
+                      stroke="rgba(255,255,255,0.08)"
                       strokeWidth="1"
                     />
                   )
@@ -928,7 +928,7 @@ function App() {
                         y1={radarCenter}
                         x2={end.x}
                         y2={end.y}
-                        stroke="rgba(255,255,255,0.06)"
+                        stroke="rgba(255,255,255,0.08)"
                         strokeWidth="1"
                       />
                       <text
@@ -948,8 +948,8 @@ function App() {
 
                 <polygon
                   points={radarPolygonPoints}
-                  fill="rgba(196, 153, 60, 0.15)"
-                  stroke="rgba(196, 153, 60, 0.7)"
+                  fill="rgba(196, 153, 60, 0.2)"
+                  stroke="rgba(196, 153, 60, 0.85)"
                   strokeWidth="1.5"
                 />
               </svg>
