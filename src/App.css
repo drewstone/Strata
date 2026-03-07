@@ -369,6 +369,7 @@ input:focus {
 .prompt-result-card,
 .top-market-card {
   border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   border-radius: 6px;
   padding: 0.75rem;
   background: var(--surface-1);
@@ -401,6 +402,7 @@ h4 {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.875rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
@@ -472,6 +474,7 @@ h4 {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.75rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--accent);
@@ -666,6 +669,27 @@ ul {
   color: var(--text-secondary);
 }
 
+.country-table td:nth-child(1),
+.country-table td:nth-child(4),
+.country-table td:nth-child(6),
+.country-table td:nth-child(7),
+.country-table td:nth-child(8),
+.country-table td:nth-child(9) {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.country-table th:nth-child(1),
+.country-table th:nth-child(4),
+.country-table th:nth-child(6),
+.country-table th:nth-child(7),
+.country-table th:nth-child(8),
+.country-table th:nth-child(9) {
+  text-align: right;
+}
+
 .country-table tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.015);
 }
@@ -688,6 +712,7 @@ ul {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8125rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
@@ -764,6 +789,12 @@ ul {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+.definition-card h4 {
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
 }
 
 .definition-card p {
@@ -852,6 +883,10 @@ ul {
 
 .verdict-card .summary {
   white-space: pre-line;
+  max-height: 12rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
 }
 
 .verdict-section {
