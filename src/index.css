@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-  --background: #0a0a0f;
-  --background-alt: #12121a;
-  --foreground: #fafafa;
-  --muted: #1a1a24;
-  --muted-foreground: #71717a;
-  --accent: #f59e0b;
-  --accent-foreground: #0a0a0f;
-  --accent-muted: rgba(245, 158, 11, 0.15);
+  --background: #070b14;
+  --background-alt: #0f1624;
+  --foreground: #f5f9ff;
+  --muted: #182233;
+  --muted-foreground: #7f8ca3;
+  --accent: #22d3ee;
+  --accent-foreground: #041017;
+  --accent-muted: rgba(34, 211, 238, 0.15);
   --border: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.15);
-  --card: rgba(26, 26, 36, 0.6);
-  --card-solid: #1a1a24;
-  --ring: #f59e0b;
+  --card: rgba(24, 34, 51, 0.6);
+  --card-solid: #182233;
+  --ring: #22d3ee;
 
   font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.45;
@@ -39,8 +39,8 @@ body,
 body {
   margin: 0;
   min-width: 320px;
-  background: radial-gradient(ellipse at top, rgba(245, 158, 11, 0.06) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%),
+  background: radial-gradient(ellipse at top, rgba(34, 211, 238, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(34, 211, 238, 0.04) 0%, transparent 50%),
     var(--background);
   color: var(--foreground);
   position: relative;
@@ -74,5 +74,5 @@ a:focus-visible,
 button:focus-visible,
 select:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px rgba(34, 211, 238, 0.2);
 }
