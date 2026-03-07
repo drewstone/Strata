@@ -192,6 +192,14 @@ const inferAssumptions = (
 
   const fallbackSector = normalized.includes('health') || normalized.includes('care')
     ? 'Healthcare Services'
+    : normalized.includes('software') || normalized.includes('saas') || normalized.includes('data')
+      ? 'Software & Data Services'
+      : normalized.includes('financial') || normalized.includes('fintech') || normalized.includes('bank')
+        ? 'Financial Services'
+        : normalized.includes('energy') || normalized.includes('power') || normalized.includes('infrastructure')
+          ? 'Energy & Infrastructure'
+          : normalized.includes('consumer') || normalized.includes('retail') || normalized.includes('ecommerce')
+            ? 'Consumer & Retail'
     : normalized.includes('aerospace') || normalized.includes('defense')
       ? 'Aerospace & Defense'
       : normalized.includes('industrial') || normalized.includes('manufacturing')
@@ -636,6 +644,66 @@ function App() {
             <p>
               Excludes: non-compliant suppliers without required certifications, export-control
               readiness, or government contracting capability.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Software &amp; Data Services</h4>
+            <p>
+              Software-led and data-intensive businesses delivering mission-critical workflows,
+              analytics, and recurring subscription or usage-based products.
+            </p>
+            <p>
+              Includes: vertical SaaS, workflow software, data infrastructure, applied AI tooling,
+              and enterprise information services.
+            </p>
+            <p>
+              Excludes: ad-dependent consumer apps and non-differentiated IT resale businesses.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Financial Services</h4>
+            <p>
+              Regulated and adjacent financial platforms delivering payments, lending, insurance,
+              wealth, and capital markets enablement.
+            </p>
+            <p>
+              Includes: specialty finance, payments infrastructure, wealth operations, reg-tech,
+              and risk/compliance platforms.
+            </p>
+            <p>
+              Excludes: highly speculative trading-led models without durable operating earnings.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Energy &amp; Infrastructure</h4>
+            <p>
+              Businesses that build, operate, or service critical energy, utilities, transport, and
+              core infrastructure systems.
+            </p>
+            <p>
+              Includes: grid and transmission services, distributed energy, utility services,
+              environmental infrastructure, and operations technology.
+            </p>
+            <p>
+              Excludes: pure commodity exposure without defensible operating capabilities.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Consumer &amp; Retail</h4>
+            <p>
+              Consumer-facing brands and retail platforms with repeat demand, pricing discipline,
+              and scalable multichannel distribution.
+            </p>
+            <p>
+              Includes: specialty retail, consumer health/wellness, digitally enabled commerce, and
+              franchise-like service chains.
+            </p>
+            <p>
+              Excludes: trend-dependent low-moat products with weak retention or margin durability.
             </p>
           </article>
         </section>

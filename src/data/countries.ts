@@ -44,6 +44,10 @@ export const supportedSectors = [
   'Healthcare Services',
   'Industrial Technology',
   'Aerospace & Defense',
+  'Software & Data Services',
+  'Financial Services',
+  'Energy & Infrastructure',
+  'Consumer & Retail',
 ] as const
 
 const asOfDate = '2026-03-07'
@@ -359,8 +363,39 @@ const withOverrides = (
     },
   }
 
+  const professionalServices = profile.sectorFit['Professional Services'] ?? 0
+  const industrialTechnology = profile.sectorFit['Industrial Technology'] ?? 0
+  const healthcareServices = profile.sectorFit['Healthcare Services'] ?? 0
+  const aerospaceDefense = profile.sectorFit['Aerospace & Defense'] ?? 0
+
+  const clampScore = (value: number): number => Math.max(0, Math.min(100, Math.round(value)))
+
+  const expandedSectorFit: Record<string, number> = {
+    ...profile.sectorFit,
+    'Software & Data Services': clampScore(
+      professionalServices * 0.58 +
+        industrialTechnology * 0.32 +
+        (100 - factors.regulatoryComplexity) * 0.1,
+    ),
+    'Financial Services': clampScore(
+      professionalServices * 0.45 +
+        factors.economicStrength * 0.4 +
+        (100 - factors.regulatoryComplexity) * 0.15,
+    ),
+    'Energy & Infrastructure': clampScore(
+      industrialTechnology * 0.5 + aerospaceDefense * 0.25 + factors.economicStrength * 0.25,
+    ),
+    'Consumer & Retail': clampScore(
+      professionalServices * 0.45 +
+        healthcareServices * 0.2 +
+        factors.economicStrength * 0.2 +
+        (100 - factors.taxTariffFriction) * 0.15,
+    ),
+  }
+
   return {
     ...profile,
+    sectorFit: expandedSectorFit,
     factors,
     sources,
     factorCitations: factorCitationsFor(profile.code),

@@ -41,6 +41,10 @@ Industries:
 - Healthcare Services
 - Industrial Technology
 - Aerospace & Defense
+- Software & Data Services
+- Financial Services
+- Energy & Infrastructure
+- Consumer & Retail
 
 Strategies:
 - `Buyout`
