@@ -767,6 +767,12 @@ li:first-child {
   color: var(--text-primary);
 }
 
+.sortable-th abbr {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
 .country-table td {
   font-size: 0.875rem;
   color: var(--text-secondary);

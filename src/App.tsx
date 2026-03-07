@@ -919,8 +919,14 @@ function App() {
                     <th className="sortable-th" onClick={() => toggleSort('recommendation')}>Rec.{sortIndicator('recommendation')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('sectorFit')}>Sector Fit{sortIndicator('sectorFit')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('factors')}>Factors{sortIndicator('factors')}</th>
-                    <th className="sortable-th" onClick={() => toggleSort('adjacency')}>Adj.{sortIndicator('adjacency')}</th>
-                    <th className="sortable-th" onClick={() => toggleSort('confidence')}>Conf.{sortIndicator('confidence')}</th>
+                    <th className="sortable-th" onClick={() => toggleSort('adjacency')}>
+                      <abbr title="Adjacency adjustment">Adj.</abbr>
+                      {sortIndicator('adjacency')}
+                    </th>
+                    <th className="sortable-th" onClick={() => toggleSort('confidence')}>
+                      <abbr title="Confidence">Conf.</abbr>
+                      {sortIndicator('confidence')}
+                    </th>
                     <th>Updated</th>
                   </tr>
                 </thead>
