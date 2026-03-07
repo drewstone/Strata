@@ -30,8 +30,6 @@ function App() {
     [sector, strategy],
   )
 
-  const usProfile = ranked.find((profile) => profile.code === 'US')
-  const germanyProfile = ranked.find((profile) => profile.code === 'DE')
   const trackedCountries = ranked.length
 
   return (
@@ -67,26 +65,6 @@ function App() {
             ))}
           </select>
         </label>
-      </section>
-
-      <section className="must-have-row">
-        {[usProfile, germanyProfile].map((profile) => {
-          if (!profile) {
-            return null
-          }
-
-          return (
-            <article key={profile.code} className="country-card fixed-priority">
-              <div>
-                <p className="country-code">{profile.code}</p>
-                <h2>{profile.name}</h2>
-              </div>
-              <p className="score">{profile.overallScore}</p>
-              <p className={badgeClass(profile.recommendation)}>{profile.recommendation}</p>
-              <p className="summary">{profile.notes}</p>
-            </article>
-          )
-        })}
       </section>
 
       <section className="grid-header">

@@ -9,48 +9,111 @@
     "materialKeywords": ["enforcement", "rule", "penalty", "sanction", "compliance"]
   },
   {
-    "id": "us-ftc-press",
-    "country": "US",
-    "institution": "U.S. Federal Trade Commission",
-    "topic": "Competition and consumer protection",
-    "url": "https://www.ftc.gov/news-events/news/press-releases",
-    "criticality": "high",
-    "materialKeywords": ["merger", "antitrust", "investigation", "consent order"]
-  },
-  {
-    "id": "us-doj-opa",
-    "country": "US",
-    "institution": "U.S. Department of Justice",
-    "topic": "Antitrust and corporate enforcement",
-    "url": "https://www.justice.gov/opa/pr",
-    "criticality": "high",
-    "materialKeywords": ["antitrust", "settlement", "criminal", "charges", "acquisition"]
-  },
-  {
     "id": "de-bafin-news",
     "country": "DE",
     "institution": "BaFin",
     "topic": "Financial regulation and supervision",
-    "url": "https://www.bafin.de/SiteGlobals/Functions/EN/Presse/Pressemitteilungen/pressemitteilungen_node_en.html",
+    "url": "https://www.bafin.de/EN/Homepage/homepage_node_en.html",
     "criticality": "high",
     "materialKeywords": ["supervision", "compliance", "warning", "administrative fine"]
   },
   {
-    "id": "de-bundesbank-press",
-    "country": "DE",
-    "institution": "Deutsche Bundesbank",
-    "topic": "Monetary and financial stability updates",
-    "url": "https://www.bundesbank.de/en/press/press-releases",
-    "criticality": "medium",
-    "materialKeywords": ["financial stability", "risk", "inflation", "forecast"]
+    "id": "sg-mas-news",
+    "country": "SG",
+    "institution": "Monetary Authority of Singapore",
+    "topic": "Financial and market regulation",
+    "url": "https://www.mas.gov.sg/news",
+    "criticality": "high",
+    "materialKeywords": ["consultation", "regulatory", "enforcement", "guidelines"]
   },
   {
-    "id": "de-bkartamt-press",
-    "country": "DE",
-    "institution": "Bundeskartellamt",
-    "topic": "Competition authority decisions",
-    "url": "https://www.bundeskartellamt.de/EN/News/news_node.html",
+    "id": "ca-boc-news",
+    "country": "CA",
+    "institution": "Bank of Canada",
+    "topic": "Macro-financial policy updates",
+    "url": "https://www.bankofcanada.ca/",
+    "criticality": "medium",
+    "materialKeywords": ["financial stability", "risk", "inflation", "policy rate"]
+  },
+  {
+    "id": "ae-cbuae-news",
+    "country": "AE",
+    "institution": "Central Bank of the UAE",
+    "topic": "Financial supervision and policy",
+    "url": "https://www.centralbank.ae/en/",
+    "criticality": "medium",
+    "materialKeywords": ["regulation", "supervision", "compliance", "guidance"]
+  },
+  {
+    "id": "gb-boe-news",
+    "country": "GB",
+    "institution": "Bank of England",
+    "topic": "Financial and monetary policy updates",
+    "url": "https://www.bankofengland.co.uk/news",
+    "criticality": "medium",
+    "materialKeywords": ["prudential", "market", "compliance", "policy"]
+  },
+  {
+    "id": "fr-bdf-news",
+    "country": "FR",
+    "institution": "Banque de France",
+    "topic": "Financial stability and policy updates",
+    "url": "https://www.banque-france.fr/en",
+    "criticality": "medium",
+    "materialKeywords": ["stability", "supervision", "risk", "regulatory"]
+  },
+  {
+    "id": "nl-dnb-news",
+    "country": "NL",
+    "institution": "De Nederlandsche Bank",
+    "topic": "Supervision and financial policy",
+    "url": "https://www.dnb.nl/en/news/",
+    "criticality": "medium",
+    "materialKeywords": ["supervision", "regulation", "risk", "financial system"]
+  },
+  {
+    "id": "jp-boj-news",
+    "country": "JP",
+    "institution": "Bank of Japan",
+    "topic": "Financial system and macro policy",
+    "url": "https://www.boj.or.jp/en/announcements/",
+    "criticality": "medium",
+    "materialKeywords": ["financial system", "policy", "stability", "risk"]
+  },
+  {
+    "id": "au-rba-media",
+    "country": "AU",
+    "institution": "Reserve Bank of Australia",
+    "topic": "Financial conditions and policy",
+    "url": "https://www.rba.gov.au/media-releases/",
+    "criticality": "medium",
+    "materialKeywords": ["policy", "financial", "risk", "stability"]
+  },
+  {
+    "id": "in-rbi-press",
+    "country": "IN",
+    "institution": "Reserve Bank of India",
+    "topic": "Regulatory and monetary communications",
+    "url": "https://www.rbi.org.in/",
     "criticality": "high",
-    "materialKeywords": ["merger control", "cartel", "fine", "proceeding"]
+    "materialKeywords": ["regulation", "compliance", "circular", "prudential"]
+  },
+  {
+    "id": "br-bcb-news",
+    "country": "BR",
+    "institution": "Banco Central do Brasil",
+    "topic": "Financial system and policy updates",
+    "url": "https://www.bcb.gov.br/en/pressdetail",
+    "criticality": "medium",
+    "materialKeywords": ["regulation", "stability", "risk", "supervision"]
+  },
+  {
+    "id": "mx-banxico-news",
+    "country": "MX",
+    "institution": "Banco de México",
+    "topic": "Financial and policy communications",
+    "url": "https://www.banxico.org.mx/publications-and-press/",
+    "criticality": "medium",
+    "materialKeywords": ["policy", "financial", "stability", "risk"]
   }
 ]

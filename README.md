@@ -6,7 +6,7 @@ It currently combines:
 - Country scoring by strategy and sector
 - Source-cited factor intelligence (IMF, World Bank, OECD, regulator links)
 - Scenario scoring (base/upside/downside)
-- Cron-capable regulation monitoring (US + Germany)
+- Cron-capable regulation monitoring across all tracked markets
 - Memo export (`.md` + `.pdf`)
 - Simple backend storage for score snapshots and monitoring runs
 
@@ -14,7 +14,7 @@ It currently combines:
 13 markets:
 - US, DE, SG, CA, AE, GB, FR, NL, JP, AU, IN, BR, MX
 
-US and Germany are explicitly prioritized in the UI and regulation monitoring flows.
+Markets are handled without US/DE priority bias in monitoring and ranking display.
 
 ## Scoring model
 Overall score:
@@ -60,7 +60,7 @@ npm run ingest:indicators
 Generated file:
 - `src/data/indicatorOverrides.ts`
 
-## Regulation monitoring (US + DE)
+## Regulation monitoring (all markets)
 ### One-shot run
 ```bash
 npm run monitor:regulations:once

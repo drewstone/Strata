@@ -146,16 +146,17 @@ const determineChanges = (current, previousState) => {
 }
 
 const toMarkdownReport = (runAt, evaluated, materialChanges) => {
+  const trackedCountries = [...new Set(evaluated.map((item) => item.country))].sort()
   const lines = [
     '# Regulation Monitoring Report',
     '',
     `- Run at: ${runAt}`,
     `- Sources checked: ${evaluated.length}`,
+    `- Markets tracked: ${trackedCountries.length}`,
     `- Material changes: ${materialChanges.length}`,
     '',
-    '## Tracked countries',
-    '- US',
-    '- DE',
+    '## Tracked markets',
+    ...trackedCountries.map((country) => `- ${country}`),
     '',
     '## Material change summary',
   ]
@@ -194,12 +195,14 @@ const persistRunToBackend = async (runAt, evaluated, materialChanges) => {
   }
 
   try {
+    const trackedCountries = [...new Set(evaluated.map((item) => item.country))].sort()
+
     const response = await fetch(`${backendUrl.replace(/\/$/, '')}/api/monitor-runs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         runAt,
-        trackedCountries: ['US', 'DE'],
+        trackedCountries,
         totalSources: evaluated.length,
         materialChangeCount: materialChanges.length,
         materialChanges,

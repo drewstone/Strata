@@ -53,18 +53,6 @@ select {
   background: #f8fcff;
 }
 
-.must-have-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.2rem;
-}
-
-.fixed-priority {
-  border: 2px solid #3e7ca8;
-  background: linear-gradient(160deg, #f7fbff 0%, #e8f4ff 100%);
-}
-
 .grid-header {
   margin-top: 1.5rem;
 }
