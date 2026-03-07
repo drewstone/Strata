@@ -413,7 +413,6 @@ function App() {
       ? null
       : tailoredRanked.findIndex((country) => country.code === promptAssumptions.targetCountryCode) + 1
 
-  const topThree = ranked.slice(0, 3)
   const trackedCountries = ranked.length
   const radarProfile = tailoredRanked[0] ?? ranked[0]
   const radarContextLabel = `#1 tailored recommendation: ${radarProfile.name}`
@@ -605,32 +604,6 @@ function App() {
             </div>
           </section>
 
-          <section className="weights-panel">
-            <p className="weights-title">Current factor weights ({strategy})</p>
-            <div className="weights-grid">
-              {strategyWeights[strategy].map((factor) => (
-                <div key={`weight-${factor.key}`} className="weight-chip">
-                  <p>{factorLabel(factor.key)}</p>
-                  <span>{Math.round(factor.weight * 100)}% · {factor.invert ? 'Lower is better' : 'Higher is better'}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="top-three-grid">
-            {topThree.map((profile, index) => (
-              <article key={`top-${profile.code}`} className="top-market-card">
-                <p className="top-rank">{podiumLabels[index] ?? `${index + 1}th place`}</p>
-                <h4>{profile.name}</h4>
-                <p className="region">{profile.region}</p>
-                <p className="top-score">{profile.scenarioScore}</p>
-                <p className={badgeClass(profile.scenarioRecommendation)}>
-                  {profile.scenarioRecommendation}
-                </p>
-              </article>
-            ))}
-          </section>
-
           {rankingView === 'cards' ? (
             <section className="country-grid">
               {ranked.map((profile, index) => {
@@ -773,6 +746,18 @@ function App() {
               </table>
             </section>
           )}
+
+          <section className="weights-panel">
+            <p className="weights-title">Factor Weights — {strategy}</p>
+            <div className="weights-grid">
+              {strategyWeights[strategy].map((factor) => (
+                <div key={`weight-${factor.key}`} className="weight-chip">
+                  <p>{factorLabel(factor.key)}</p>
+                  <span>{Math.round(factor.weight * 100)}% · {factor.invert ? 'Lower is better' : 'Higher is better'}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         </>
       ) : viewMode === 'dealLab' ? (
         <>
