@@ -407,7 +407,6 @@ function App() {
   const [batchStatus, setBatchStatus] = useState<{ total: number; completed: number; running: boolean }>({ total: 0, completed: 0, running: false })
   const [sortColumn, setSortColumn] = useState<string>('score')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-  const [radarRankChoice, setRadarRankChoice] = useState<number>(0)
 
   const regionOptions = useMemo(
     () => Array.from(new Set(countryProfiles.map((profile) => profile.region))),
@@ -482,20 +481,11 @@ function App() {
       : tailoredRanked.findIndex((country) => country.code === promptAssumptions.targetCountryCode) + 1
 
   const trackedCountries = ranked.length
-  const radarRankIndex = Math.min(radarRankChoice, Math.max(tailoredTopThree.length - 1, 0))
-  const radarProfile = tailoredTopThree[radarRankIndex] ?? tailoredTopThree[0] ?? ranked[0]
-  const radarContextLabel = `Top ${radarRankIndex + 1} tailored recommendation: ${radarProfile.name}`
-  const radarMetrics = dealProfileMetrics(radarProfile)
+  const radarProfiles = (tailoredTopThree.length > 0 ? tailoredTopThree : ranked.slice(0, 3)).slice(0, 3)
   const radarSize = 380
   const radarCenter = radarSize / 2
   const radarRadius = 120
   const radarLevels = [20, 40, 60, 80, 100]
-  const radarPolygonPoints = radarMetrics
-    .map((metric, index) => {
-      const point = radarPoint(index, radarMetrics.length, metric.value, radarCenter, radarCenter, radarRadius)
-      return `${point.x},${point.y}`
-    })
-    .join(' ')
 
   const loadResearchResults = async () => {
     try {
@@ -985,119 +975,156 @@ function App() {
               <div>
                 <p className="weights-title">Deal Profile Radar</p>
                 <p className="prompt-subtitle">
-                  Instant profile view across market, growth, technology, customer quality, and risks.
+                  Top 3 tailored recommendations side by side across market, growth, technology,
+                  customer quality, and risks.
                 </p>
-                <div className="radar-toggle">
-                  {tailoredTopThree.map((profile, index) => (
-                    <button
-                      key={`radar-choice-${profile.code}`}
-                      type="button"
-                      className={radarRankIndex === index ? 'scenario-btn active' : 'scenario-btn'}
-                      onClick={() => setRadarRankChoice(index)}
+              </div>
+            </div>
+
+            <div className="radar-grid">
+              {radarProfiles.map((profile, index) => {
+                const radarMetrics = dealProfileMetrics(profile)
+                const radarPolygonPoints = radarMetrics
+                  .map((metric, metricIndex) => {
+                    const point = radarPoint(
+                      metricIndex,
+                      radarMetrics.length,
+                      metric.value,
+                      radarCenter,
+                      radarCenter,
+                      radarRadius,
+                    )
+                    return `${point.x},${point.y}`
+                  })
+                  .join(' ')
+
+                return (
+                  <article key={`radar-${profile.code}`} className="radar-card">
+                    <p className="top-rank">{podiumLabels[index] ?? `${index + 1}th place`}</p>
+                    <h4>{profile.name}</h4>
+                    <p className={badgeClass(profile.scenarioRecommendation)}>
+                      {profile.scenarioRecommendation}
+                    </p>
+
+                    <svg
+                      viewBox={`0 0 ${radarSize} ${radarSize}`}
+                      role="img"
+                      aria-label={`Deal profile radar for ${profile.name}`}
+                      className="radar-chart"
                     >
-                      {podiumLabels[index]} · {profile.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <p className="radar-context">{radarContextLabel}</p>
-            </div>
+                      {radarLevels.map((level) => {
+                        const ringPoints = radarMetrics
+                          .map((_, metricIndex) => {
+                            const point = radarPoint(
+                              metricIndex,
+                              radarMetrics.length,
+                              level,
+                              radarCenter,
+                              radarCenter,
+                              radarRadius,
+                            )
+                            return `${point.x},${point.y}`
+                          })
+                          .join(' ')
+                        return (
+                          <polygon
+                            key={`ring-${profile.code}-${level}`}
+                            points={ringPoints}
+                            fill="none"
+                            stroke="rgba(255,255,255,0.08)"
+                            strokeWidth="1"
+                          />
+                        )
+                      })}
 
-            <div className="radar-layout">
-              <svg
-                viewBox={`0 0 ${radarSize} ${radarSize}`}
-                role="img"
-                aria-label={`Deal profile radar for ${radarProfile.name}`}
-                className="radar-chart"
-              >
-                {radarLevels.map((level) => {
-                  const ringPoints = radarMetrics
-                    .map((_, index) => {
-                      const point = radarPoint(
-                        index,
-                        radarMetrics.length,
-                        level,
-                        radarCenter,
-                        radarCenter,
-                        radarRadius,
-                      )
-                      return `${point.x},${point.y}`
-                    })
-                    .join(' ')
-                  return (
-                    <polygon
-                      key={`ring-${level}`}
-                      points={ringPoints}
-                      fill="none"
-                      stroke="rgba(255,255,255,0.08)"
-                      strokeWidth="1"
-                    />
-                  )
-                })}
+                      {radarMetrics.map((metric, metricIndex) => {
+                        const end = radarPoint(
+                          metricIndex,
+                          radarMetrics.length,
+                          100,
+                          radarCenter,
+                          radarCenter,
+                          radarRadius,
+                        )
+                        const labelPos = radarPoint(
+                          metricIndex,
+                          radarMetrics.length,
+                          100,
+                          radarCenter,
+                          radarCenter,
+                          radarRadius + 24,
+                        )
+                        const angle = -Math.PI / 2 + (metricIndex / radarMetrics.length) * Math.PI * 2
+                        const textAnchor =
+                          Math.abs(Math.cos(angle)) < 0.15 ? 'middle' : Math.cos(angle) > 0 ? 'start' : 'end'
+                        return (
+                          <g key={`axis-${profile.code}-${metricIndex}`}>
+                            <line
+                              x1={radarCenter}
+                              y1={radarCenter}
+                              x2={end.x}
+                              y2={end.y}
+                              stroke="rgba(255,255,255,0.08)"
+                              strokeWidth="1"
+                            />
+                            <text
+                              x={labelPos.x}
+                              y={labelPos.y}
+                              textAnchor={textAnchor}
+                              dominantBaseline="middle"
+                              fill="rgba(255,255,255,0.5)"
+                              fontSize="10"
+                              fontFamily="Inter, system-ui, sans-serif"
+                            >
+                              {metric.label}
+                            </text>
+                          </g>
+                        )
+                      })}
 
-                {radarMetrics.map((metric, index) => {
-                  const end = radarPoint(index, radarMetrics.length, 100, radarCenter, radarCenter, radarRadius)
-                  const labelPos = radarPoint(index, radarMetrics.length, 100, radarCenter, radarCenter, radarRadius + 24)
-                  const angle = -Math.PI / 2 + (index / radarMetrics.length) * Math.PI * 2
-                  const textAnchor = Math.abs(Math.cos(angle)) < 0.15 ? 'middle' : Math.cos(angle) > 0 ? 'start' : 'end'
-                  return (
-                    <g key={`axis-${index}`}>
-                      <line
-                        x1={radarCenter}
-                        y1={radarCenter}
-                        x2={end.x}
-                        y2={end.y}
-                        stroke="rgba(255,255,255,0.08)"
-                        strokeWidth="1"
+                      <polygon
+                        points={radarPolygonPoints}
+                        fill="rgba(196, 153, 60, 0.2)"
+                        stroke="rgba(196, 153, 60, 0.85)"
+                        strokeWidth="1.5"
                       />
-                      <text
-                        x={labelPos.x}
-                        y={labelPos.y}
-                        textAnchor={textAnchor}
-                        dominantBaseline="middle"
-                        fill="rgba(255,255,255,0.5)"
-                        fontSize="10"
-                        fontFamily="Inter, system-ui, sans-serif"
-                      >
-                        {metric.label}
-                      </text>
-                    </g>
-                  )
-                })}
 
-                <polygon
-                  points={radarPolygonPoints}
-                  fill="rgba(196, 153, 60, 0.2)"
-                  stroke="rgba(196, 153, 60, 0.85)"
-                  strokeWidth="1.5"
-                />
+                      {radarMetrics.map((metric, metricIndex) => {
+                        const pt = radarPoint(
+                          metricIndex,
+                          radarMetrics.length,
+                          metric.value,
+                          radarCenter,
+                          radarCenter,
+                          radarRadius,
+                        )
+                        return (
+                          <circle
+                            key={`dot-${profile.code}-${metricIndex}`}
+                            cx={pt.x}
+                            cy={pt.y}
+                            r="3"
+                            fill="rgba(196, 153, 60, 0.9)"
+                          />
+                        )
+                      })}
+                    </svg>
 
-                {radarMetrics.map((metric, index) => {
-                  const pt = radarPoint(index, radarMetrics.length, metric.value, radarCenter, radarCenter, radarRadius)
-                  return (
-                    <circle
-                      key={`dot-${index}`}
-                      cx={pt.x}
-                      cy={pt.y}
-                      r="3"
-                      fill="rgba(196, 153, 60, 0.9)"
-                    />
-                  )
-                })}
-              </svg>
-
-              <div className="radar-legend">
-                {radarMetrics.map((metric) => (
-                  <p key={`legend-${metric.label}`}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </p>
-                ))}
-                <p className="radar-note">
-                  Risk axes are displayed as risk intensity (higher value = higher risk).
-                </p>
-              </div>
+                    <div className="radar-legend">
+                      {radarMetrics.map((metric) => (
+                        <p key={`legend-${profile.code}-${metric.label}`}>
+                          <span>{metric.label}</span>
+                          <strong>{metric.value}</strong>
+                        </p>
+                      ))}
+                    </div>
+                  </article>
+                )
+              })}
             </div>
+            <p className="radar-note">
+              Risk axes are displayed as risk intensity (higher value = higher risk).
+            </p>
           </section>
         </>
       ) : viewMode === 'research' ? (
