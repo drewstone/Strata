@@ -70,6 +70,20 @@ npm run build
 npm run lint
 ```
 
+## Hosted preview with auto-deploy
+This repo is configured to auto-deploy the frontend to GitHub Pages on every push to `main`.
+
+Workflow file:
+- `.github/workflows/deploy-frontend.yml`
+
+One-time setup in GitHub:
+1. Open repository `Settings` -> `Pages`.
+2. Set `Source` to `GitHub Actions`.
+3. Push to `main` (or rerun the deploy workflow).
+
+After setup, your site will be available at:
+- `https://sarah-odell.github.io/Strata/`
+
 ## Indicator ingestion pipeline
 Pulls live macro/tariff signals and regenerates factor overrides used by the app:
 
