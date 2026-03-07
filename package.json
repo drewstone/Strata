@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "backend": "node backend/server.mjs",
+    "ingest:indicators": "node ingestion/update-indicators.mjs",
+    "memo:export": "node --import tsx/esm reporting/export-memo.mjs",
+    "snapshot:persist": "node --import tsx/esm reporting/persist-snapshot.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -12,7 +16,9 @@
     "monitor:regulations": "node monitoring/regulation-monitor.mjs --schedule \"0 */6 * * *\""
   },
   "dependencies": {
+    "express": "^5.1.0",
     "node-cron": "^4.2.1",
+    "pdfkit": "^0.17.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -26,6 +32,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "tsx": "^4.20.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite": "^7.3.1"

@@ -37,6 +37,11 @@ export type ScoredCountry = CountryProfile & {
   weightedFactorScore: number
   overallScore: number
   recommendation: 'Go' | 'Watchlist' | 'Avoid'
+  scenarios: {
+    base: number
+    upside: number
+    downside: number
+  }
 }
 
 const scoreBucket = (score: number): ScoredCountry['recommendation'] => {
@@ -72,6 +77,11 @@ export const scoreCountry = (
     weightedFactorScore: Math.round(weightedFactorScore),
     overallScore,
     recommendation: scoreBucket(overallScore),
+    scenarios: {
+      base: overallScore,
+      upside: Math.min(100, overallScore + 6),
+      downside: Math.max(0, overallScore - 9),
+    },
   }
 }
 

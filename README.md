@@ -1,64 +1,128 @@
 # Strata: PE Expansion Intelligence
 
-Strata is an early-stage decision-support tool for PE and corp-dev teams assessing market expansion.
+Strata is a PE/corp-dev decision support tool for market expansion screening.
 
-This first MVP slice provides:
-- Country ranking by strategy and sector
-- Explicit factor scoring (economic, regulatory, tax/tariff, geopolitical, execution)
-- Transparent weighted model and confidence metadata
-- Baseline country coverage that includes **United States** and **Germany**
+It currently combines:
+- Country scoring by strategy and sector
+- Source-cited factor intelligence (IMF, World Bank, OECD, regulator links)
+- Scenario scoring (base/upside/downside)
+- Cron-capable regulation monitoring (US + Germany)
+- Memo export (`.md` + `.pdf`)
+- Simple backend storage for score snapshots and monitoring runs
 
-## Why this exists
-Expansion decisions are often slowed by fragmented macro/regulatory inputs. Strata turns those inputs into a comparable, auditable scorecard.
+## Current country coverage
+13 markets:
+- US, DE, SG, CA, AE, GB, FR, NL, JP, AU, IN, BR, MX
 
-## Current model
-Overall score formula:
+US and Germany are explicitly prioritized in the UI and regulation monitoring flows.
+
+## Scoring model
+Overall score:
 - `35%` sector fit
-- `65%` risk-adjusted country factor bundle (weights vary by strategy)
+- `65%` weighted country risk-adjusted factors
 
-Strategies currently supported:
+Factors:
+- Economic strength
+- Regulatory complexity
+- Tax/tariff friction
+- Geopolitical risk
+- Deal execution risk
+
+Strategies:
 - `Buyout`
 - `Growth`
 - `Low-Risk Entry`
 
-## Run locally
+## Local development
+Install:
 ```bash
 npm install
+```
+
+Run app:
+```bash
 npm run dev
 ```
 
-## Build and lint
+Quality checks:
 ```bash
 npm run build
 npm run lint
 ```
 
-## Regulation monitoring (US + Germany)
-This repo now includes a scheduled regulation monitor aligned to a Dexter-style ops workflow.
+## Indicator ingestion pipeline
+Pulls live macro/tariff signals and regenerates factor overrides used by the app:
 
-What it does:
-- Polls configured regulator sources for US and Germany
-- Detects page-content changes via hash diffing
-- Persists run state in `.strata/regulation-monitor-state.json`
-- Writes timestamped run reports under `reports/`
+```bash
+npm run ingest:indicators
+```
 
-Run once:
+Generated file:
+- `src/data/indicatorOverrides.ts`
+
+## Regulation monitoring (US + DE)
+### One-shot run
 ```bash
 npm run monitor:regulations:once
 ```
 
-Run as daemon every 6 hours:
+### Scheduled daemon (every 6 hours)
 ```bash
 npm run monitor:regulations
 ```
 
-Customize schedule:
+### Custom schedule
 ```bash
 REG_MONITOR_CRON="0 */4 * * *" npm run monitor:regulations
 ```
 
-## Short-term roadmap
-1. Replace seeded indicators with scheduled ingestion pipelines.
-2. Add source-level citations (OECD, IMF, World Bank, regulators) per factor.
-3. Add change alerts for major policy/geopolitical shifts.
-4. Add memo export format for IC workflows.
+### Materiality and alerting
+The monitor now classifies changes by severity (`HIGH`, `MEDIUM`, `LOW`, `NONE`) using:
+- Source criticality
+- Change type
+- Material keyword hits
+
+Reports are written to `reports/`.
+
+## Memo export
+Generate IC-style country memo:
+
+```bash
+npm run memo:export -- --country DE --strategy Buyout --sector "Industrial Technology"
+```
+
+Outputs:
+- `reports/memo-<...>.md`
+- `reports/memo-<...>.pdf`
+
+## Backend storage API
+Start backend:
+```bash
+npm run backend
+```
+
+Health check:
+```bash
+curl http://localhost:8787/health
+```
+
+Persist current scoring snapshot set:
+```bash
+STRATA_BACKEND_URL=http://localhost:8787 npm run snapshot:persist
+```
+
+API endpoints:
+- `GET /api/snapshots`
+- `POST /api/snapshots`
+- `GET /api/monitor-runs`
+- `POST /api/monitor-runs`
+
+Storage file:
+- `.strata/backend-store.json`
+
+## Next steps
+1. Add direct OECD/IMF indicator adapters beyond current baseline pulls.
+2. Add factor-level confidence bands driven by data freshness and source quality.
+3. Build country detail routes with compare mode and saved watchlists.
+4. Add monitor-to-alert delivery channels (Slack/email/webhook) with approval gates.
+5. Migrate backend storage from local JSON to Postgres/Supabase.

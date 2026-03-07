@@ -172,6 +172,38 @@ ul {
   padding-left: 1.1rem;
 }
 
+.detail-toggle {
+  margin-top: 0.7rem;
+  border: 1px solid #2c6b94;
+  border-radius: 999px;
+  background: #edf6fd;
+  color: #124261;
+  padding: 0.38rem 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.detail-panel {
+  margin-top: 0.75rem;
+  border-top: 1px solid #d4e5f3;
+  padding-top: 0.7rem;
+}
+
+.detail-title {
+  margin-top: 0.55rem;
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+  color: #174868;
+}
+
+.citation-group ul {
+  margin-top: 0.2rem;
+}
+
+.citation-group a {
+  color: #005d95;
+}
+
 .meta {
   color: #3f5f76;
   font-size: 0.88rem;

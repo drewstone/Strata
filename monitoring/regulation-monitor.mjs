@@ -17,6 +17,8 @@ const schedule =
   process.env.REG_MONITOR_CRON ||
   '0 */6 * * *'
 
+const backendUrl = process.env.STRATA_BACKEND_URL || ''
+
 const nowIso = () => new Date().toISOString()
 
 const stableHash = (value) => createHash('sha256').update(value).digest('hex')
@@ -42,12 +44,46 @@ const extractTitle = (html) => {
   return match ? sanitize(match[1]) : 'Untitled page'
 }
 
+const scoreMateriality = (snapshot) => {
+  if (!snapshot.ok) {
+    return { severity: 'HIGH', reason: 'Source fetch failed' }
+  }
+
+  if (snapshot.changeType === 'unchanged') {
+    return { severity: 'NONE', reason: 'No meaningful content change detected' }
+  }
+
+  if (snapshot.changeType === 'new') {
+    return { severity: 'MEDIUM', reason: 'New source baseline captured' }
+  }
+
+  const keywordHits = (snapshot.materialKeywords || []).filter((keyword) =>
+    snapshot.normalizedBody.includes(keyword.toLowerCase()),
+  )
+
+  if (snapshot.criticality === 'high' || keywordHits.length > 0) {
+    return {
+      severity: 'HIGH',
+      reason:
+        keywordHits.length > 0
+          ? `Material keywords detected: ${keywordHits.join(', ')}`
+          : 'High-criticality source changed',
+    }
+  }
+
+  if (snapshot.criticality === 'medium') {
+    return { severity: 'MEDIUM', reason: 'Medium-criticality source changed' }
+  }
+
+  return { severity: 'LOW', reason: 'Low-criticality source changed' }
+}
+
 const fetchSource = async (source) => {
   const startedAt = nowIso()
   try {
     const response = await fetch(source.url, {
       headers: {
-        'User-Agent': 'strata-regulation-monitor/0.1',
+        'User-Agent': 'strata-regulation-monitor/0.2',
       },
       signal: AbortSignal.timeout(30000),
     })
@@ -66,6 +102,7 @@ const fetchSource = async (source) => {
       lastModified: response.headers.get('last-modified'),
       hash: stableHash(normalizedBody),
       bodyLength: body.length,
+      normalizedBody: normalizedBody.toLowerCase(),
       error: null,
     }
   } catch (error) {
@@ -80,6 +117,7 @@ const fetchSource = async (source) => {
       lastModified: null,
       hash: null,
       bodyLength: 0,
+      normalizedBody: '',
       error: error instanceof Error ? error.message : 'Unknown fetch error',
     }
   }
@@ -107,28 +145,29 @@ const determineChanges = (current, previousState) => {
   })
 }
 
-const toMarkdownReport = (runAt, evaluated, changed) => {
+const toMarkdownReport = (runAt, evaluated, materialChanges) => {
   const lines = [
     '# Regulation Monitoring Report',
     '',
     `- Run at: ${runAt}`,
     `- Sources checked: ${evaluated.length}`,
-    `- New or changed: ${changed.length}`,
+    `- Material changes: ${materialChanges.length}`,
     '',
     '## Tracked countries',
     '- US',
     '- DE',
     '',
-    '## Change summary',
+    '## Material change summary',
   ]
 
-  if (changed.length === 0) {
-    lines.push('- No source-content changes detected this run.')
+  if (materialChanges.length === 0) {
+    lines.push('- No material regulatory changes detected this run.')
   } else {
-    for (const item of changed) {
+    for (const item of materialChanges) {
       lines.push(
-        `- [${item.country}] ${item.institution}: ${item.changeType.toUpperCase()} (${item.status ?? 'error'})`,
+        `- [${item.country}] ${item.institution}: ${item.changeType.toUpperCase()} · severity=${item.severity} (${item.status ?? 'error'})`,
       )
+      lines.push(`  - Materiality reason: ${item.materialityReason}`)
       lines.push(`  - URL: ${item.url}`)
       lines.push(`  - Title: ${item.title ?? 'Unavailable'}`)
       lines.push(`  - Checked at: ${item.checkedAt}`)
@@ -141,10 +180,41 @@ const toMarkdownReport = (runAt, evaluated, changed) => {
   lines.push('', '## Full status')
 
   for (const item of evaluated) {
-    lines.push(`- ${item.id}: ok=${item.ok} status=${item.status ?? 'error'} hash=${item.hash ?? 'none'}`)
+    lines.push(
+      `- ${item.id}: ok=${item.ok} status=${item.status ?? 'error'} change=${item.changeType} severity=${item.severity}`,
+    )
   }
 
   return `${lines.join('\n')}\n`
+}
+
+const persistRunToBackend = async (runAt, evaluated, materialChanges) => {
+  if (!backendUrl) {
+    return
+  }
+
+  try {
+    const response = await fetch(`${backendUrl.replace(/\/$/, '')}/api/monitor-runs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        runAt,
+        trackedCountries: ['US', 'DE'],
+        totalSources: evaluated.length,
+        materialChangeCount: materialChanges.length,
+        materialChanges,
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!response.ok) {
+      console.error(`Backend monitor persistence failed (${response.status})`)
+    }
+  } catch (error) {
+    console.error(
+      `Backend monitor persistence error: ${error instanceof Error ? error.message : 'unknown error'}`,
+    )
+  }
 }
 
 const runMonitor = async () => {
@@ -157,8 +227,17 @@ const runMonitor = async () => {
 
   const previousState = await readJson(statePath, { lastRunAt: null, sources: {} })
   const snapshots = await Promise.all(sources.map((source) => fetchSource(source)))
-  const evaluated = determineChanges(snapshots, previousState)
-  const changed = evaluated.filter((item) => item.changeType === 'new' || item.changeType === 'changed')
+  const evaluatedRaw = determineChanges(snapshots, previousState)
+  const evaluated = evaluatedRaw.map((item) => {
+    const { severity, reason } = scoreMateriality(item)
+    return {
+      ...item,
+      severity,
+      materialityReason: reason,
+    }
+  })
+
+  const materialChanges = evaluated.filter((item) => item.severity === 'HIGH' || item.severity === 'MEDIUM')
 
   const nextState = {
     lastRunAt: runAt,
@@ -174,6 +253,7 @@ const runMonitor = async () => {
           url: item.url,
           country: item.country,
           institution: item.institution,
+          criticality: item.criticality,
         },
       ]),
     ),
@@ -184,11 +264,13 @@ const runMonitor = async () => {
   const reportName = `reg-monitor-${runAt.replace(/[:.]/g, '-')}.md`
   const reportPath = path.join(reportsDir, reportName)
   await mkdir(reportsDir, { recursive: true })
-  await writeFile(reportPath, toMarkdownReport(runAt, evaluated, changed), 'utf-8')
+  await writeFile(reportPath, toMarkdownReport(runAt, evaluated, materialChanges), 'utf-8')
+
+  await persistRunToBackend(runAt, evaluated, materialChanges)
 
   console.log(`Regulation monitor run complete at ${runAt}`)
   console.log(`Report written: ${reportPath}`)
-  console.log(`Changes detected: ${changed.length}`)
+  console.log(`Material changes detected: ${materialChanges.length}`)
 }
 
 if (once) {

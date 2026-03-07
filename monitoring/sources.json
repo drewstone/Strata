@@ -4,41 +4,53 @@
     "country": "US",
     "institution": "U.S. Securities and Exchange Commission",
     "topic": "Market regulation and enforcement",
-    "url": "https://www.sec.gov/news/pressreleases"
+    "url": "https://www.sec.gov/news/pressreleases",
+    "criticality": "high",
+    "materialKeywords": ["enforcement", "rule", "penalty", "sanction", "compliance"]
   },
   {
     "id": "us-ftc-press",
     "country": "US",
     "institution": "U.S. Federal Trade Commission",
     "topic": "Competition and consumer protection",
-    "url": "https://www.ftc.gov/news-events/news/press-releases"
+    "url": "https://www.ftc.gov/news-events/news/press-releases",
+    "criticality": "high",
+    "materialKeywords": ["merger", "antitrust", "investigation", "consent order"]
   },
   {
     "id": "us-doj-opa",
     "country": "US",
     "institution": "U.S. Department of Justice",
     "topic": "Antitrust and corporate enforcement",
-    "url": "https://www.justice.gov/opa/pr"
+    "url": "https://www.justice.gov/opa/pr",
+    "criticality": "high",
+    "materialKeywords": ["antitrust", "settlement", "criminal", "charges", "acquisition"]
   },
   {
     "id": "de-bafin-news",
     "country": "DE",
     "institution": "BaFin",
     "topic": "Financial regulation and supervision",
-    "url": "https://www.bafin.de/SiteGlobals/Functions/EN/Presse/Pressemitteilungen/pressemitteilungen_node_en.html"
+    "url": "https://www.bafin.de/SiteGlobals/Functions/EN/Presse/Pressemitteilungen/pressemitteilungen_node_en.html",
+    "criticality": "high",
+    "materialKeywords": ["supervision", "compliance", "warning", "administrative fine"]
   },
   {
     "id": "de-bundesbank-press",
     "country": "DE",
     "institution": "Deutsche Bundesbank",
     "topic": "Monetary and financial stability updates",
-    "url": "https://www.bundesbank.de/en/press/press-releases"
+    "url": "https://www.bundesbank.de/en/press/press-releases",
+    "criticality": "medium",
+    "materialKeywords": ["financial stability", "risk", "inflation", "forecast"]
   },
   {
     "id": "de-bkartamt-press",
     "country": "DE",
     "institution": "Bundeskartellamt",
     "topic": "Competition authority decisions",
-    "url": "https://www.bundeskartellamt.de/EN/News/news_node.html"
+    "url": "https://www.bundeskartellamt.de/EN/News/news_node.html",
+    "criticality": "high",
+    "materialKeywords": ["merger control", "cartel", "fine", "proceeding"]
   }
 ]
