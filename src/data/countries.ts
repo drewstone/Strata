@@ -48,6 +48,10 @@ export const supportedSectors = [
   'Financial Services',
   'Energy & Infrastructure',
   'Consumer & Retail',
+  'Logistics & Transportation',
+  'Education & Training',
+  'Real Estate & Built Environment',
+  'Food & Agriculture',
 ] as const
 
 const asOfDate = '2026-03-07'
@@ -390,6 +394,31 @@ const withOverrides = (
         healthcareServices * 0.2 +
         factors.economicStrength * 0.2 +
         (100 - factors.taxTariffFriction) * 0.15,
+    ),
+    'Logistics & Transportation': clampScore(
+      industrialTechnology * 0.45 +
+        factors.economicStrength * 0.25 +
+        (100 - factors.taxTariffFriction) * 0.2 +
+        (100 - factors.regulatoryComplexity) * 0.1,
+    ),
+    'Education & Training': clampScore(
+      professionalServices * 0.52 +
+        healthcareServices * 0.16 +
+        factors.economicStrength * 0.2 +
+        (100 - factors.dealExecutionRisk) * 0.12,
+    ),
+    'Real Estate & Built Environment': clampScore(
+      industrialTechnology * 0.4 +
+        factors.economicStrength * 0.28 +
+        (100 - factors.dealExecutionRisk) * 0.2 +
+        (100 - factors.geopoliticalRisk) * 0.12,
+    ),
+    'Food & Agriculture': clampScore(
+      healthcareServices * 0.18 +
+        professionalServices * 0.24 +
+        factors.economicStrength * 0.24 +
+        (100 - factors.taxTariffFriction) * 0.18 +
+        (100 - factors.geopoliticalRisk) * 0.16,
     ),
   }
 

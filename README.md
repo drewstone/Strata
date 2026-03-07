@@ -45,6 +45,10 @@ Industries:
 - Financial Services
 - Energy & Infrastructure
 - Consumer & Retail
+- Logistics & Transportation
+- Education & Training
+- Real Estate & Built Environment
+- Food & Agriculture
 
 Strategies:
 - `Buyout`

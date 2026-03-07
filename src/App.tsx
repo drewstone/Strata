@@ -201,13 +201,21 @@ const inferAssumptions = (
           ? 'Energy & Infrastructure'
           : normalized.includes('consumer') || normalized.includes('retail') || normalized.includes('ecommerce')
             ? 'Consumer & Retail'
-    : normalized.includes('aerospace') || normalized.includes('defense')
-      ? 'Aerospace & Defense'
-      : normalized.includes('industrial') || normalized.includes('manufacturing')
-        ? 'Industrial Technology'
-        : normalized.includes('professional services') || normalized.includes('business services')
-          ? 'Professional Services'
-          : defaults.sector
+            : normalized.includes('logistics') || normalized.includes('transport') || normalized.includes('supply chain')
+              ? 'Logistics & Transportation'
+              : normalized.includes('education') || normalized.includes('training') || normalized.includes('edtech')
+                ? 'Education & Training'
+                : normalized.includes('real estate') || normalized.includes('built environment') || normalized.includes('property')
+                  ? 'Real Estate & Built Environment'
+                  : normalized.includes('food') || normalized.includes('agri') || normalized.includes('agriculture')
+                    ? 'Food & Agriculture'
+                    : normalized.includes('aerospace') || normalized.includes('defense')
+                      ? 'Aerospace & Defense'
+                      : normalized.includes('industrial') || normalized.includes('manufacturing')
+                        ? 'Industrial Technology'
+                        : normalized.includes('professional services') || normalized.includes('business services')
+                          ? 'Professional Services'
+                          : defaults.sector
 
   const dealSizeFromPrompt = dealSizeFromMillions(parseMoneyToMillions(prompt))
   const fundSizeMillions = parseMoneyToMillions(fundSizeInput)
@@ -769,6 +777,66 @@ function App() {
             </p>
             <p>
               Excludes: trend-dependent low-moat products with weak retention or margin durability.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Logistics &amp; Transportation</h4>
+            <p>
+              Businesses enabling goods movement, distribution, and supply chain reliability across
+              domestic and cross-border networks.
+            </p>
+            <p>
+              Includes: contract logistics, freight forwarding, transport software, warehouse
+              automation, and last-mile optimization.
+            </p>
+            <p>
+              Excludes: pure commodity shipping exposure without differentiated service capabilities.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Education &amp; Training</h4>
+            <p>
+              Platforms and service providers delivering workforce, professional, and institutional
+              learning outcomes with recurring demand.
+            </p>
+            <p>
+              Includes: vocational training, corporate learning platforms, assessment systems, and
+              compliance training solutions.
+            </p>
+            <p>
+              Excludes: unaccredited, low-completion models without measurable learner outcomes.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Real Estate &amp; Built Environment</h4>
+            <p>
+              Businesses tied to property operations, facility performance, and built-environment
+              modernization.
+            </p>
+            <p>
+              Includes: property technology, facility services, construction-adjacent services, and
+              asset operations platforms.
+            </p>
+            <p>
+              Excludes: pure land speculation and highly cyclical assets without operating leverage.
+            </p>
+          </article>
+
+          <article className="definition-card">
+            <h4>Food &amp; Agriculture</h4>
+            <p>
+              Businesses in food value chains and agricultural systems with defensible processing,
+              distribution, and compliance capabilities.
+            </p>
+            <p>
+              Includes: food processing, agri-services, specialty inputs, cold-chain infrastructure,
+              and traceability software.
+            </p>
+            <p>
+              Excludes: undifferentiated commodity exposure lacking value-added operations.
             </p>
           </article>
         </section>
