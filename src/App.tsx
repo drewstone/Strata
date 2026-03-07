@@ -248,7 +248,7 @@ const topStrengths = (profile: ScoredCountry, strategy: Strategy): string[] => {
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('radar')
-  const [rankingView, setRankingView] = useState<RankingView>('cards')
+  const [rankingView, setRankingView] = useState<RankingView>('table')
   const [sector, setSector] = useState<string>(supportedSectors[0])
   const [strategy, setStrategy] = useState<Strategy>('Buyout')
   const [scenarioCase, setScenarioCase] = useState<ScenarioCase>('base')
