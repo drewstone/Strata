@@ -1,6 +1,7 @@
 import { type CountryProfile, type FactorKey } from '../data/countries'
 
 export type Strategy = 'Buyout' | 'Growth' | 'Low-Risk Entry'
+export type ScenarioCase = 'base' | 'bull' | 'bear'
 
 export type FactorWeight = {
   key: FactorKey
@@ -57,10 +58,12 @@ export type ScoredCountry = CountryProfile & {
   weightedFactorScore: number
   overallScore: number
   recommendation: 'Go' | 'Maybe' | 'Avoid'
+  scenarioScore: number
+  scenarioRecommendation: 'Go' | 'Maybe' | 'Avoid'
   scenarios: {
     base: number
-    upside: number
-    downside: number
+    bull: number
+    bear: number
   }
 }
 
@@ -85,6 +88,7 @@ export const scoreCountry = (
   profile: CountryProfile,
   sector: string,
   strategy: Strategy,
+  scenarioCase: ScenarioCase = 'base',
 ): ScoredCountry => {
   const sectorScore = profile.sectorFit[sector] ?? 0
   const weightedFactorScore = strategyWeights[strategy].reduce((acc, factor) => {
@@ -96,16 +100,26 @@ export const scoreCountry = (
 
   const overallScore = Math.round(sectorScore * 0.35 + weightedFactorScore * 0.65)
 
+  const scenarios = {
+    base: overallScore,
+    bull: Math.min(100, overallScore + 6),
+    bear: Math.max(0, overallScore - 9),
+  }
+
+  const scenarioScore = scenarios[scenarioCase]
+
   return {
     ...profile,
     sectorScore,
     weightedFactorScore: Math.round(weightedFactorScore),
     overallScore,
     recommendation: scoreBucket(overallScore, strategy),
+    scenarioScore,
+    scenarioRecommendation: scoreBucket(scenarioScore, strategy),
     scenarios: {
-      base: overallScore,
-      upside: Math.min(100, overallScore + 6),
-      downside: Math.max(0, overallScore - 9),
+      base: scenarios.base,
+      bull: scenarios.bull,
+      bear: scenarios.bear,
     },
   }
 }
@@ -114,8 +128,9 @@ export const rankCountries = (
   profiles: CountryProfile[],
   sector: string,
   strategy: Strategy,
+  scenarioCase: ScenarioCase = 'base',
 ): ScoredCountry[] => {
   return profiles
-    .map((profile) => scoreCountry(profile, sector, strategy))
-    .sort((a, b) => b.overallScore - a.overallScore)
+    .map((profile) => scoreCountry(profile, sector, strategy, scenarioCase))
+    .sort((a, b) => b.scenarioScore - a.scenarioScore)
 }

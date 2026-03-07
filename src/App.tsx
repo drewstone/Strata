@@ -1,10 +1,21 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import { countryProfiles, supportedSectors, type FactorKey } from './data/countries'
-import { rankCountries, strategyWeights, type ScoredCountry, type Strategy } from './lib/scoring'
+import {
+  rankCountries,
+  strategyWeights,
+  type ScenarioCase,
+  type ScoredCountry,
+  type Strategy,
+} from './lib/scoring'
 
 const strategies: Strategy[] = ['Buyout', 'Growth', 'Low-Risk Entry']
 type ViewMode = 'radar' | 'definitions'
+const scenarioOptions: { label: string; value: ScenarioCase }[] = [
+  { label: 'Base Case', value: 'base' },
+  { label: 'Bull Case', value: 'bull' },
+  { label: 'Bear Case', value: 'bear' },
+]
 const podiumLabels = ['1st place', '2nd place', '3rd place'] as const
 
 const factorLabel = (key: FactorKey): string =>
@@ -38,11 +49,12 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('radar')
   const [sector, setSector] = useState<string>(supportedSectors[0])
   const [strategy, setStrategy] = useState<Strategy>('Buyout')
+  const [scenarioCase, setScenarioCase] = useState<ScenarioCase>('base')
   const [expandedCountryCode, setExpandedCountryCode] = useState<string | null>('US')
 
   const ranked = useMemo(
-    () => rankCountries(countryProfiles, sector, strategy),
-    [sector, strategy],
+    () => rankCountries(countryProfiles, sector, strategy, scenarioCase),
+    [sector, strategy, scenarioCase],
   )
 
   const topThree = ranked.slice(0, 3)
@@ -105,11 +117,24 @@ function App() {
             </label>
           </section>
 
+          <section className="scenario-toggle">
+            {scenarioOptions.map((scenario) => (
+              <button
+                key={scenario.value}
+                type="button"
+                className={scenarioCase === scenario.value ? 'scenario-btn active' : 'scenario-btn'}
+                onClick={() => setScenarioCase(scenario.value)}
+              >
+                {scenario.label}
+              </button>
+            ))}
+          </section>
+
           <section className="grid-header">
             <h3>Country ranking ({trackedCountries} markets)</h3>
             <p>
               Overall score = 35% sector fit + 65% weighted risk-adjusted country factors for{' '}
-              <strong>{strategy}</strong>
+              <strong>{strategy}</strong> · <strong>{scenarioOptions.find((s) => s.value === scenarioCase)?.label}</strong>
             </p>
           </section>
 
@@ -131,8 +156,10 @@ function App() {
                 <p className="top-rank">{podiumLabels[index] ?? `${index + 1}th place`}</p>
                 <h4>{profile.name}</h4>
                 <p className="region">{profile.region}</p>
-                <p className="top-score">Score {profile.overallScore}</p>
-                <p className={badgeClass(profile.recommendation)}>{profile.recommendation}</p>
+                <p className="top-score">Score {profile.scenarioScore}</p>
+                <p className={badgeClass(profile.scenarioRecommendation)}>
+                  {profile.scenarioRecommendation}
+                </p>
               </article>
             ))}
           </section>
@@ -152,8 +179,10 @@ function App() {
                     </div>
                     <div className="score-stack">
                       <p className="rank-pill">#{index + 1}</p>
-                      <p className="score">{profile.overallScore}</p>
-                      <p className={badgeClass(profile.recommendation)}>{profile.recommendation}</p>
+                      <p className="score">{profile.scenarioScore}</p>
+                      <p className={badgeClass(profile.scenarioRecommendation)}>
+                        {profile.scenarioRecommendation}
+                      </p>
                     </div>
                   </div>
 
@@ -204,8 +233,8 @@ function App() {
                     <div className="detail-panel">
                       <p className="detail-title">Scenario scores</p>
                       <p>Base: {profile.scenarios.base}</p>
-                      <p>Upside: {profile.scenarios.upside}</p>
-                      <p>Downside: {profile.scenarios.downside}</p>
+                      <p>Bull: {profile.scenarios.bull}</p>
+                      <p>Bear: {profile.scenarios.bear}</p>
                       <p className="detail-title">Factor citations</p>
                       {Object.entries(profile.factorCitations).map(([factor, citations]) => (
                         <div key={factor} className="citation-group">

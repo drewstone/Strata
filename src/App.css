@@ -130,6 +130,36 @@
   background: rgba(18, 18, 26, 0.3);
 }
 
+.scenario-toggle {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.scenario-btn {
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: rgba(18, 18, 26, 0.4);
+  color: #d7dae3;
+  padding: 0.45rem 0.78rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms ease-out;
+}
+
+.scenario-btn:hover {
+  border-color: var(--border-hover);
+}
+
+.scenario-btn.active {
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.14);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+}
+
 label {
   display: grid;
   gap: 0.45rem;
