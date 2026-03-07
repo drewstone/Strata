@@ -10,6 +10,7 @@ Strata is a PE/corp-dev decision support tool for market expansion screening.
 - Provides scenario views (`base`, `upside`, `downside`).
 - Adds a deal-team prompt tool that parses user context (fund size, target geography, strategy cues) and returns a tailored top-3 market view.
 - Supports portfolio adjacency modeling (existing sectors, regions, and capabilities) that adjusts market rankings.
+- Includes a deal-profile radar chart for each market (market position, growth, technology, customer quality, regulatory risk, integration risk).
 - Monitors regulation sources across all tracked markets on a schedule.
 - Exports memo drafts (`.md` and `.pdf`).
 - Stores snapshots and monitor runs via a lightweight backend API.

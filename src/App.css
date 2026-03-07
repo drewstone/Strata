@@ -372,6 +372,66 @@ input:focus {
   margin-top: 1.55rem;
 }
 
+.radar-panel {
+  margin-top: 1.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgba(18, 18, 26, 0.44);
+  padding: 1.1rem;
+}
+
+.radar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.radar-selector {
+  min-width: 220px;
+}
+
+.radar-layout {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: 1.1rem;
+  align-items: center;
+}
+
+.radar-chart {
+  width: 100%;
+  height: auto;
+}
+
+.radar-legend {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.radar-legend p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.38rem;
+  color: #d3d8e4;
+}
+
+.radar-legend strong {
+  color: #f8d07a;
+}
+
+.radar-note {
+  margin-top: 0.35rem !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+  color: #97a0b3 !important;
+  font-size: 0.82rem;
+  display: block !important;
+}
+
 .top-market-card {
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: 0.75rem;
@@ -761,6 +821,18 @@ ul {
   .grid-header-top {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .radar-header {
+    flex-direction: column;
+  }
+
+  .radar-selector {
+    min-width: 100%;
+  }
+
+  .radar-layout {
+    grid-template-columns: 1fr;
   }
 
   .ranking-view-toggle {

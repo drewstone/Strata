@@ -266,6 +266,48 @@ const topStrengths = (profile: ScoredCountry, strategy: Strategy): string[] => {
 const toggleItem = <T,>(items: T[], value: T): T[] =>
   items.includes(value) ? items.filter((item) => item !== value) : [...items, value]
 
+type RadarMetric = {
+  label: string
+  value: number
+}
+
+const dealProfileMetrics = (profile: ScoredCountry): RadarMetric[] => {
+  const technology =
+    ((profile.sectorFit['Industrial Technology'] ?? 0) +
+      (profile.sectorFit['Software & Data Services'] ?? 0)) /
+    2
+  const customerQuality =
+    ((profile.sectorFit['Professional Services'] ?? 0) +
+      (profile.sectorFit['Consumer & Retail'] ?? 0) +
+      (profile.sectorFit['Healthcare Services'] ?? 0)) /
+    3
+
+  return [
+    { label: 'Market Position', value: profile.scenarioScore },
+    { label: 'Growth', value: profile.factors.economicStrength },
+    { label: 'Technology', value: Math.round(technology) },
+    { label: 'Customer Quality', value: Math.round(customerQuality) },
+    { label: 'Regulatory Risk', value: profile.factors.regulatoryComplexity },
+    { label: 'Integration Risk', value: profile.factors.dealExecutionRisk },
+  ]
+}
+
+const radarPoint = (
+  index: number,
+  total: number,
+  value: number,
+  cx: number,
+  cy: number,
+  radius: number,
+): { x: number; y: number } => {
+  const angle = -Math.PI / 2 + (index / total) * Math.PI * 2
+  const scaledRadius = (Math.max(0, Math.min(100, value)) / 100) * radius
+  return {
+    x: cx + Math.cos(angle) * scaledRadius,
+    y: cy + Math.sin(angle) * scaledRadius,
+  }
+}
+
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('radar')
   const [rankingView, setRankingView] = useState<RankingView>('table')
@@ -281,6 +323,7 @@ function App() {
   const [portfolioSectors, setPortfolioSectors] = useState<string[]>([])
   const [portfolioRegions, setPortfolioRegions] = useState<string[]>([])
   const [portfolioCapabilities, setPortfolioCapabilities] = useState<PortfolioCapability[]>([])
+  const [radarCountryCode, setRadarCountryCode] = useState<string>('US')
 
   const regionOptions = useMemo(
     () => Array.from(new Set(countryProfiles.map((profile) => profile.region))),
@@ -326,6 +369,18 @@ function App() {
 
   const topThree = ranked.slice(0, 3)
   const trackedCountries = ranked.length
+  const radarProfile = ranked.find((profile) => profile.code === radarCountryCode) ?? ranked[0]
+  const radarMetrics = dealProfileMetrics(radarProfile)
+  const radarSize = 320
+  const radarCenter = radarSize / 2
+  const radarRadius = 110
+  const radarLevels = [20, 40, 60, 80, 100]
+  const radarPolygonPoints = radarMetrics
+    .map((metric, index) => {
+      const point = radarPoint(index, radarMetrics.length, metric.value, radarCenter, radarCenter, radarRadius)
+      return `${point.x},${point.y}`
+    })
+    .join(' ')
 
   return (
     <main className="app-shell">
@@ -572,6 +627,95 @@ function App() {
                 </p>
               </article>
             ))}
+          </section>
+
+          <section className="radar-panel">
+            <div className="radar-header">
+              <div>
+                <p className="weights-title">Deal Profile Radar</p>
+                <p className="prompt-subtitle">
+                  Instant profile view across market, growth, technology, customer quality, and risks.
+                </p>
+              </div>
+              <label className="radar-selector">
+                Country
+                <select value={radarCountryCode} onChange={(event) => setRadarCountryCode(event.target.value)}>
+                  {ranked.map((profile) => (
+                    <option key={`radar-${profile.code}`} value={profile.code}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="radar-layout">
+              <svg
+                viewBox={`0 0 ${radarSize} ${radarSize}`}
+                role="img"
+                aria-label={`Deal profile radar for ${radarProfile.name}`}
+                className="radar-chart"
+              >
+                {radarLevels.map((level) => {
+                  const ringPoints = radarMetrics
+                    .map((_, index) => {
+                      const point = radarPoint(
+                        index,
+                        radarMetrics.length,
+                        level,
+                        radarCenter,
+                        radarCenter,
+                        radarRadius,
+                      )
+                      return `${point.x},${point.y}`
+                    })
+                    .join(' ')
+                  return (
+                    <polygon
+                      key={`ring-${level}`}
+                      points={ringPoints}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.12)"
+                      strokeWidth="1"
+                    />
+                  )
+                })}
+
+                {radarMetrics.map((_, index) => {
+                  const end = radarPoint(index, radarMetrics.length, 100, radarCenter, radarCenter, radarRadius)
+                  return (
+                    <line
+                      key={`axis-${index}`}
+                      x1={radarCenter}
+                      y1={radarCenter}
+                      x2={end.x}
+                      y2={end.y}
+                      stroke="rgba(255,255,255,0.18)"
+                      strokeWidth="1"
+                    />
+                  )
+                })}
+
+                <polygon
+                  points={radarPolygonPoints}
+                  fill="rgba(245, 158, 11, 0.22)"
+                  stroke="rgba(245, 158, 11, 0.9)"
+                  strokeWidth="2"
+                />
+              </svg>
+
+              <div className="radar-legend">
+                {radarMetrics.map((metric) => (
+                  <p key={`legend-${metric.label}`}>
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </p>
+                ))}
+                <p className="radar-note">
+                  Risk axes are displayed as risk intensity (higher value = higher risk).
+                </p>
+              </div>
+            </div>
           </section>
 
           {rankingView === 'cards' ? (
