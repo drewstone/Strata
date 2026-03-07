@@ -50,6 +50,31 @@ body {
   color: var(--text-primary);
 }
 
+::selection {
+  background: rgba(196, 153, 60, 0.3);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+
 h1, h2, h3, h4 {
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
