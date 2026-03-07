@@ -10,6 +10,18 @@ const podiumLabels = ['1st place', '2nd place', '3rd place'] as const
 const factorLabel = (key: FactorKey): string =>
   key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
 
+const trendArrow = (direction: 'up' | 'down' | 'flat'): string => {
+  if (direction === 'up') {
+    return '↑'
+  }
+
+  if (direction === 'down') {
+    return '↓'
+  }
+
+  return '→'
+}
+
 const badgeClass = (recommendation: ScoredCountry['recommendation']): string => {
   if (recommendation === 'Go') {
     return 'badge badge-go'
@@ -155,11 +167,17 @@ function App() {
                       const raw = profile.factors[factor.key]
                       const directional = factor.invert ? 100 - raw : raw
                       const quality = profile.factorDataQuality[factor.key]
+                      const trendClass = `factor-trend factor-trend-${quality.trendDirection}`
+                      const signedDelta =
+                        quality.delta > 0 ? `+${quality.delta.toFixed(1)}` : quality.delta.toFixed(1)
 
                       return (
                         <li key={factor.key}>
                           {factorLabel(factor.key)}: {raw} (model impact: {directional}, weight{' '}
                           {(factor.weight * 100).toFixed(0)}%)
+                          <span className={trendClass}>
+                            {trendArrow(quality.trendDirection)} {signedDelta}
+                          </span>
                           <span className="factor-quality">
                             Refreshed {quality.lastRefreshed} · Confidence{' '}
                             {Math.round(quality.confidence * 100)}%

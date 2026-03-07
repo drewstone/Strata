@@ -33,6 +33,8 @@ export type CountryProfile = {
     {
       lastRefreshed: string
       confidence: number
+      trendDirection: 'up' | 'down' | 'flat'
+      delta: number
     }
   >
 }
@@ -328,22 +330,32 @@ const withOverrides = (
     economicStrength: {
       lastRefreshed: indicatorOverridesGeneratedAt,
       confidence: liveFactorConfidence.economicStrength ?? 0.8,
+      trendDirection: 'up',
+      delta: 1.6,
     },
     taxTariffFriction: {
       lastRefreshed: indicatorOverridesGeneratedAt,
       confidence: liveFactorConfidence.taxTariffFriction ?? 0.78,
+      trendDirection: 'down',
+      delta: -1.2,
     },
     regulatoryComplexity: {
       lastRefreshed: asOfDate,
       confidence: 0.68,
+      trendDirection: 'flat',
+      delta: 0.1,
     },
     geopoliticalRisk: {
       lastRefreshed: asOfDate,
       confidence: 0.65,
+      trendDirection: 'up',
+      delta: 0.8,
     },
     dealExecutionRisk: {
       lastRefreshed: asOfDate,
       confidence: 0.67,
+      trendDirection: 'down',
+      delta: -0.6,
     },
   }
 

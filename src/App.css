@@ -394,6 +394,30 @@ ul {
   font-size: 0.79rem;
 }
 
+.factor-trend {
+  display: inline-block;
+  margin-left: 0.45rem;
+  border-radius: 9999px;
+  padding: 0.07rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.factor-trend-up {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.factor-trend-down {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.factor-trend-flat {
+  color: #c7cad4;
+  background: rgba(113, 113, 122, 0.24);
+}
+
 .summary {
   color: #d4d8e5;
 }
