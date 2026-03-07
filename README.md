@@ -26,8 +26,6 @@ It currently combines:
 - Brazil
 - Mexico
 
-Markets are handled without US/DE priority bias in monitoring and ranking display.
-
 ## Scoring model
 Overall score:
 - `35%` sector fit
