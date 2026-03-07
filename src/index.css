@@ -1,9 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap');
+
 :root {
-  font-family: 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  --bg-1: #f7fbff;
+  --bg-2: #eaf2ff;
+  --bg-3: #effaf4;
+  --ink: #12283e;
+  --ink-soft: #4a6077;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --stroke: rgba(33, 73, 104, 0.22);
+  --accent: #1e688f;
+  --accent-soft: #d9eefc;
+  --go-bg: #d7f6e0;
+  --go-ink: #0f6a36;
+  --maybe-bg: #ffefc5;
+  --maybe-ink: #765011;
+  --avoid-bg: #ffdeda;
+  --avoid-ink: #8a1e2a;
+
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
   line-height: 1.45;
   font-weight: 400;
-  color: #0f2535;
-  background: radial-gradient(circle at top right, #c3d7f2 0%, #f4f8ff 42%, #f5fbf8 100%);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 0%, #d1e6ff 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, #d6f4e3 0%, transparent 42%),
+    linear-gradient(170deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,4 +39,14 @@
 body {
   margin: 0;
   min-width: 320px;
+}
+
+h1,
+h2,
+h3,
+h4,
+button,
+label,
+select {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
 }
