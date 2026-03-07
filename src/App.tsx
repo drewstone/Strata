@@ -100,6 +100,23 @@ const personaLabel = (id: string): string =>
 const DEFAULT_BACKEND_URL = 'http://localhost:8787'
 const BACKEND_URL_STORAGE_KEY = 'strata_backend_url'
 
+const formatResearchError = (raw: string): string => {
+  const message = raw.trim()
+  if (!message) {
+    return 'Research job failed during execution.'
+  }
+
+  if (message.includes('spawn claude ENOENT')) {
+    return 'Research runtime not found on backend host (missing `claude` CLI). Install Claude CLI or set STRATA_CLAUDE_CMD to a valid command.'
+  }
+
+  if (message.toLowerCase().includes('timed out')) {
+    return 'Research runtime timed out. Retry or increase runtime timeout on backend.'
+  }
+
+  return message
+}
+
 const factorLabel = (key: FactorKey): string =>
   key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
 
@@ -443,6 +460,7 @@ function App() {
   const [researchStrategy, setResearchStrategy] = useState<Strategy>('Buyout')
   const [researchPrompt, setResearchPrompt] = useState<string>('')
   const [researchStatus, setResearchStatus] = useState<'idle' | 'running' | 'completed' | 'failed'>('idle')
+  const [researchError, setResearchError] = useState<string | null>(null)
   const [researchResults, setResearchResults] = useState<ResearchResult[]>([])
   const [selectedResearch, setSelectedResearch] = useState<ResearchResult | null>(null)
   const [batchStatus, setBatchStatus] = useState<{ total: number; completed: number; running: boolean }>({ total: 0, completed: 0, running: false })
@@ -579,6 +597,13 @@ function App() {
 
   const triggerResearch = async () => {
     const countryName = countryProfiles.find((c) => c.code === researchCountry)?.name ?? researchCountry
+    setResearchError(null)
+    const isBackendOnline = await checkBackendConnection(backendBaseUrl)
+    if (!isBackendOnline) {
+      setResearchStatus('failed')
+      setResearchError(`Backend is not reachable at ${backendBaseUrl}.`)
+      return
+    }
     setResearchStatus('running')
     try {
       const response = await fetch(`${backendBaseUrl}/api/research`, {
@@ -592,23 +617,43 @@ function App() {
           prompt: researchPrompt || undefined,
         }),
       })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed with HTTP ${response.status}`)
+      }
       const { jobId } = await response.json()
       const poll = setInterval(async () => {
         try {
           const jobRes = await fetch(`${backendBaseUrl}/api/research/jobs/${jobId}`)
+          if (!jobRes.ok) {
+            throw new Error(`Job polling failed with HTTP ${jobRes.status}`)
+          }
           const job = await jobRes.json()
           if (job.status !== 'running') {
             clearInterval(poll)
             setResearchStatus(job.status)
-            if (job.status === 'completed') loadResearchResults()
+            if (job.status === 'completed') {
+              setResearchError(null)
+              loadResearchResults()
+            } else if (job.status === 'failed') {
+              setResearchError(formatResearchError(job.error || 'Research job failed during execution.'))
+            }
           }
-        } catch {
+        } catch (error) {
           clearInterval(poll)
           setResearchStatus('failed')
+          setResearchError(
+            formatResearchError(
+              error instanceof Error ? error.message : 'Failed while polling research job status.',
+            ),
+          )
         }
       }, 5000)
-    } catch {
+    } catch (error) {
       setResearchStatus('failed')
+      setResearchError(
+        formatResearchError(error instanceof Error ? error.message : 'Failed to submit research request.'),
+      )
     }
   }
 
@@ -1463,7 +1508,8 @@ function App() {
             )}
             {researchStatus === 'failed' && (
               <p className="research-status-text research-error">
-                Research failed. Ensure backend is reachable at {backendBaseUrl} (for local use run `npm run backend`).
+                Research failed. {researchError ?? `Ensure backend is reachable at ${backendBaseUrl}.`} For local use run
+                {' '}`npm run backend`.
               </p>
             )}
             {researchStatus === 'completed' && !selectedResearch && (
