@@ -5,6 +5,7 @@ import {
   type DealSize,
   type PortfolioAdjacencyInputs,
   type PortfolioCapability,
+  type RecommendationLabel,
   rankCountries,
   strategyWeights,
   type ScenarioCase,
@@ -13,7 +14,7 @@ import {
 } from './lib/scoring'
 
 const strategies: Strategy[] = ['Buyout', 'Growth', 'Low-Risk Entry']
-type ViewMode = 'radar' | 'dealLab' | 'definitions'
+type ViewMode = 'radar' | 'dealLab' | 'definitions' | 'research'
 type RankingView = 'cards' | 'table'
 const scenarioOptions: { label: string; value: ScenarioCase }[] = [
   { label: 'Base Case', value: 'base' },
@@ -51,6 +52,46 @@ type PromptAssumptions = {
   dealSize: DealSize
   targetCountryCode: string | null
 }
+
+type ResearchVerdict = {
+  persona: string
+  country: string
+  countryCode: string
+  sector: string
+  strategy: string
+  score: number
+  confidence: number
+  recommendation: RecommendationLabel
+  narrative: string
+  keyRisks: string[]
+  keyOpportunities: string[]
+  sources: { title: string; url: string; relevance: string }[]
+  dataPoints: { label: string; value: string; source: string; asOf: string }[]
+}
+
+type ResearchResult = {
+  country: string
+  countryCode: string
+  sector: string
+  strategy: string
+  runAt: string
+  verdicts: ResearchVerdict[]
+  aggregateScore: number
+  aggregateConfidence: number
+  consensus: 'strong' | 'moderate' | 'split'
+  aggregateRecommendation: RecommendationLabel
+}
+
+const personaLabel = (id: string): string =>
+  ({
+    'macro-economist': 'Macro Economist',
+    'regulatory-analyst': 'Regulatory Analyst',
+    'deal-execution': 'Deal Execution',
+    'geopolitical-analyst': 'Geopolitical Analyst',
+    'sector-specialist': 'Sector Specialist',
+  })[id] ?? id
+
+const backendUrl = 'http://localhost:8787'
 
 const factorLabel = (key: FactorKey): string =>
   key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
@@ -323,6 +364,12 @@ function App() {
   const [portfolioSectors, setPortfolioSectors] = useState<string[]>([])
   const [portfolioRegions, setPortfolioRegions] = useState<string[]>([])
   const [portfolioCapabilities, setPortfolioCapabilities] = useState<PortfolioCapability[]>([])
+  const [researchCountry, setResearchCountry] = useState<string>('US')
+  const [researchSector, setResearchSector] = useState<string>(supportedSectors[0])
+  const [researchStrategy, setResearchStrategy] = useState<Strategy>('Buyout')
+  const [researchStatus, setResearchStatus] = useState<'idle' | 'running' | 'completed' | 'failed'>('idle')
+  const [researchResults, setResearchResults] = useState<ResearchResult[]>([])
+  const [selectedResearch, setSelectedResearch] = useState<ResearchResult | null>(null)
 
   const regionOptions = useMemo(
     () => Array.from(new Set(countryProfiles.map((profile) => profile.region))),
@@ -371,9 +418,9 @@ function App() {
   const radarProfile = tailoredRanked[0] ?? ranked[0]
   const radarContextLabel = `#1 tailored recommendation: ${radarProfile.name}`
   const radarMetrics = dealProfileMetrics(radarProfile)
-  const radarSize = 320
+  const radarSize = 380
   const radarCenter = radarSize / 2
-  const radarRadius = 110
+  const radarRadius = 120
   const radarLevels = [20, 40, 60, 80, 100]
   const radarPolygonPoints = radarMetrics
     .map((metric, index) => {
@@ -381,6 +428,49 @@ function App() {
       return `${point.x},${point.y}`
     })
     .join(' ')
+
+  const loadResearchResults = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/api/research/results`)
+      const data = await response.json()
+      setResearchResults(data.results ?? [])
+    } catch { /* backend may not be running */ }
+  }
+
+  const triggerResearch = async () => {
+    const countryName = countryProfiles.find((c) => c.code === researchCountry)?.name ?? researchCountry
+    setResearchStatus('running')
+    try {
+      const response = await fetch(`${backendUrl}/api/research`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          countryCode: researchCountry,
+          country: countryName,
+          sector: researchSector,
+          strategy: researchStrategy,
+        }),
+      })
+      const { jobId } = await response.json()
+      const poll = setInterval(async () => {
+        try {
+          const jobRes = await fetch(`${backendUrl}/api/research/jobs/${jobId}`)
+          const job = await jobRes.json()
+          if (job.status !== 'running') {
+            clearInterval(poll)
+            setResearchStatus(job.status)
+            if (job.status === 'completed') loadResearchResults()
+          }
+        } catch {
+          clearInterval(poll)
+          setResearchStatus('failed')
+        }
+      }, 5000)
+    } catch {
+      setResearchStatus('failed')
+    }
+  }
+
 
   const applyPromptDrivenSelections = (nextPrompt: string, nextFundSizeInput: string) => {
     const inferred = inferAssumptions(nextPrompt, nextFundSizeInput, {
@@ -397,16 +487,12 @@ function App() {
 
   return (
     <main className="app-shell">
-      <div className="ambient-orb orb-top" aria-hidden="true" />
-      <div className="ambient-orb orb-right" aria-hidden="true" />
-
       <header className="hero">
-        <p className="eyebrow">Strata Intelligence</p>
-        <h1>PE Expansion Radar</h1>
-        <p>
-          Decision support for PE and corporate development teams evaluating country expansion
-          exposure across macro, regulatory, tax, and geopolitical dimensions.
-        </p>
+        <div className="hero-identity">
+          <p className="eyebrow">Strata</p>
+          <h1>PE Expansion Radar</h1>
+        </div>
+        <p className="hero-meta">{countryProfiles.length} markets · {countryProfiles[0]?.lastUpdated}</p>
       </header>
 
       <section className="view-switch">
@@ -431,11 +517,18 @@ function App() {
         >
           Industry Definitions
         </button>
+        <button
+          type="button"
+          className={viewMode === 'research' ? 'view-btn active' : 'view-btn'}
+          onClick={() => { setViewMode('research'); loadResearchResults() }}
+        >
+          Research
+        </button>
       </section>
 
       {viewMode === 'radar' ? (
         <>
-          <section className="controls">
+          <section className="toolbar">
             <label>
               Deal strategy
               <select value={strategy} onChange={(event) => setStrategy(event.target.value as Strategy)}>
@@ -457,36 +550,33 @@ function App() {
                 ))}
               </select>
             </label>
-          </section>
 
-          <section className="scenario-toggle">
-            {scenarioOptions.map((scenario) => (
-              <button
-                key={scenario.value}
-                type="button"
-                className={scenarioCase === scenario.value ? 'scenario-btn active' : 'scenario-btn'}
-                onClick={() => setScenarioCase(scenario.value)}
-              >
-                {scenario.label}
-              </button>
-            ))}
-          </section>
+            <div className="toolbar-toggles">
+              {scenarioOptions.map((scenario) => (
+                <button
+                  key={scenario.value}
+                  type="button"
+                  className={scenarioCase === scenario.value ? 'scenario-btn active' : 'scenario-btn'}
+                  onClick={() => setScenarioCase(scenario.value)}
+                >
+                  {scenario.label}
+                </button>
+              ))}
 
-          <section className="scenario-toggle">
-            {dealSizeOptions.map((sizeOption) => (
-              <button
-                key={sizeOption.value}
-                type="button"
-                className={dealSize === sizeOption.value ? 'scenario-btn active' : 'scenario-btn'}
-                onClick={() => setDealSize(sizeOption.value)}
-              >
-                {sizeOption.label}
-              </button>
-            ))}
+              <span className="toolbar-divider" />
+
+              {dealSizeOptions.map((sizeOption) => (
+                <button
+                  key={sizeOption.value}
+                  type="button"
+                  className={dealSize === sizeOption.value ? 'scenario-btn active' : 'scenario-btn'}
+                  onClick={() => setDealSize(sizeOption.value)}
+                >
+                  {sizeOption.label}
+                </button>
+              ))}
+            </div>
           </section>
-          <p className="deal-size-note">
-            Deal size bands are based on target enterprise value.
-          </p>
 
           <section className="grid-header">
             <div className="grid-header-top">
@@ -666,7 +756,11 @@ function App() {
                         <span className="table-country-code">{profile.code}</span>
                       </td>
                       <td>{profile.region}</td>
-                      <td>{profile.scenarioScore}</td>
+                      <td>
+                        <span className="score-cell" style={{ '--w': `${profile.scenarioScore}%` } as React.CSSProperties}>
+                          {profile.scenarioScore}
+                        </span>
+                      </td>
                       <td>
                         <span className={badgeClass(profile.scenarioRecommendation)}>
                           {profile.scenarioRecommendation}
@@ -835,32 +929,47 @@ function App() {
                       key={`ring-${level}`}
                       points={ringPoints}
                       fill="none"
-                      stroke="rgba(255,255,255,0.12)"
+                      stroke="rgba(255,255,255,0.06)"
                       strokeWidth="1"
                     />
                   )
                 })}
 
-                {radarMetrics.map((_, index) => {
+                {radarMetrics.map((metric, index) => {
                   const end = radarPoint(index, radarMetrics.length, 100, radarCenter, radarCenter, radarRadius)
+                  const labelPos = radarPoint(index, radarMetrics.length, 100, radarCenter, radarCenter, radarRadius + 24)
+                  const angle = -Math.PI / 2 + (index / radarMetrics.length) * Math.PI * 2
+                  const textAnchor = Math.abs(Math.cos(angle)) < 0.15 ? 'middle' : Math.cos(angle) > 0 ? 'start' : 'end'
                   return (
-                    <line
-                      key={`axis-${index}`}
-                      x1={radarCenter}
-                      y1={radarCenter}
-                      x2={end.x}
-                      y2={end.y}
-                      stroke="rgba(255,255,255,0.18)"
-                      strokeWidth="1"
-                    />
+                    <g key={`axis-${index}`}>
+                      <line
+                        x1={radarCenter}
+                        y1={radarCenter}
+                        x2={end.x}
+                        y2={end.y}
+                        stroke="rgba(255,255,255,0.06)"
+                        strokeWidth="1"
+                      />
+                      <text
+                        x={labelPos.x}
+                        y={labelPos.y}
+                        textAnchor={textAnchor}
+                        dominantBaseline="middle"
+                        fill="rgba(255,255,255,0.35)"
+                        fontSize="10"
+                        fontFamily="Inter, system-ui, sans-serif"
+                      >
+                        {metric.label}
+                      </text>
+                    </g>
                   )
                 })}
 
                 <polygon
                   points={radarPolygonPoints}
-                  fill="rgba(245, 158, 11, 0.22)"
-                  stroke="rgba(245, 158, 11, 0.9)"
-                  strokeWidth="2"
+                  fill="rgba(196, 153, 60, 0.15)"
+                  stroke="rgba(196, 153, 60, 0.7)"
+                  strokeWidth="1.5"
                 />
               </svg>
 
@@ -877,6 +986,169 @@ function App() {
               </div>
             </div>
           </section>
+        </>
+      ) : viewMode === 'research' ? (
+        <>
+          <section className="controls research-trigger">
+            <label>
+              Country
+              <select value={researchCountry} onChange={(e) => setResearchCountry(e.target.value)}>
+                {countryProfiles.map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sector
+              <select value={researchSector} onChange={(e) => setResearchSector(e.target.value)}>
+                {supportedSectors.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Strategy
+              <select value={researchStrategy} onChange={(e) => setResearchStrategy(e.target.value as Strategy)}>
+                {strategies.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <div className="research-actions">
+              <button
+                type="button"
+                className="research-run-btn"
+                onClick={triggerResearch}
+                disabled={researchStatus === 'running'}
+              >
+                {researchStatus === 'running' ? 'Agents working...' : 'Run Research Ensemble'}
+              </button>
+              {researchStatus === 'running' && (
+                <p className="research-status-text">5 analyst agents researching in parallel...</p>
+              )}
+              {researchStatus === 'failed' && (
+                <p className="research-status-text research-error">Research failed. Check backend logs.</p>
+              )}
+            </div>
+          </section>
+
+          {selectedResearch ? (
+            <>
+              <section className="research-aggregate-panel">
+                <button type="button" className="detail-toggle" onClick={() => setSelectedResearch(null)}>
+                  ← All results
+                </button>
+                <div className="research-aggregate-header">
+                  <div>
+                    <p className="eyebrow">Ensemble Research Report</p>
+                    <h3>{selectedResearch.country} · {selectedResearch.sector}</h3>
+                    <p className="prompt-subtitle">
+                      {selectedResearch.strategy} · {new Date(selectedResearch.runAt).toLocaleDateString()} · {selectedResearch.verdicts.length} analysts
+                    </p>
+                  </div>
+                  <div className="score-stack">
+                    <p className="score">{selectedResearch.aggregateScore}</p>
+                    <p className={badgeClass(selectedResearch.aggregateRecommendation)}>
+                      {selectedResearch.aggregateRecommendation}
+                    </p>
+                    <p className={`research-consensus consensus-${selectedResearch.consensus}`}>
+                      {selectedResearch.consensus} consensus
+                    </p>
+                    <p className="meta">Confidence {Math.round(selectedResearch.aggregateConfidence * 100)}%</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="research-verdicts-grid">
+                {selectedResearch.verdicts.map((v) => (
+                  <article key={v.persona} className="country-card verdict-card">
+                    <div className="top-row">
+                      <div>
+                        <p className="country-code">{personaLabel(v.persona)}</p>
+                        <h4>Score {v.score}</h4>
+                      </div>
+                      <div className="score-stack">
+                        <p className={badgeClass(v.recommendation)}>{v.recommendation}</p>
+                        <p className="meta">Confidence {Math.round(v.confidence * 100)}%</p>
+                      </div>
+                    </div>
+
+                    <p className="summary">{v.narrative}</p>
+
+                    {v.keyRisks.length > 0 && (
+                      <div className="verdict-section">
+                        <p className="detail-title">Key Risks</p>
+                        <ul>{v.keyRisks.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                      </div>
+                    )}
+                    {v.keyOpportunities.length > 0 && (
+                      <div className="verdict-section">
+                        <p className="detail-title">Key Opportunities</p>
+                        <ul>{v.keyOpportunities.map((o, i) => <li key={i}>{o}</li>)}</ul>
+                      </div>
+                    )}
+                    {v.dataPoints.length > 0 && (
+                      <div className="verdict-section">
+                        <p className="detail-title">Data Points</p>
+                        <div className="data-points-grid">
+                          {v.dataPoints.map((d, i) => (
+                            <div key={i} className="weight-chip">
+                              <p>{d.label}</p>
+                              <span>{d.value} · {d.source} · {d.asOf}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {v.sources.length > 0 && (
+                      <div className="verdict-section">
+                        <p className="detail-title">Sources ({v.sources.length})</p>
+                        <ul>
+                          {v.sources.map((s, i) => (
+                            <li key={i}>
+                              <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>
+                              <span className="factor-quality">{s.relevance}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </section>
+            </>
+          ) : (
+            <>
+              <section className="grid-header" style={{ marginTop: '1.25rem' }}>
+                <h3>Research Results</h3>
+                <p>Completed ensemble analyses from AI research agents.</p>
+              </section>
+              {researchResults.length === 0 ? (
+                <p className="prompt-subtitle" style={{ marginTop: '1rem' }}>
+                  No research results yet. Run your first analysis above.
+                </p>
+              ) : (
+                <section className="prompt-results" style={{ marginTop: '1rem' }}>
+                  {researchResults.map((r, i) => (
+                    <article
+                      key={i}
+                      className="prompt-result-card"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedResearch(r)}
+                    >
+                      <p className="top-rank">{r.countryCode}</p>
+                      <h4>{r.country}</h4>
+                      <p className="region">{r.sector} · {r.strategy}</p>
+                      <p className="top-score">Score {r.aggregateScore}</p>
+                      <p className={badgeClass(r.aggregateRecommendation)}>{r.aggregateRecommendation}</p>
+                      <p className={`research-consensus consensus-${r.consensus}`}>{r.consensus} consensus</p>
+                      <p className="meta">{new Date(r.runAt).toLocaleDateString()}</p>
+                    </article>
+                  ))}
+                </section>
+              )}
+            </>
+          )}
         </>
       ) : (
         <section className="definitions-panel">
