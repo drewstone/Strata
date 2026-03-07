@@ -280,6 +280,13 @@ input:focus {
   margin-top: 2.4rem;
 }
 
+.grid-header-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
 .grid-header h3 {
   margin: 0;
   font-size: 1.35rem;
@@ -289,6 +296,12 @@ input:focus {
 .grid-header p {
   margin: 0.35rem 0 0;
   color: var(--muted-foreground);
+}
+
+.ranking-view-toggle {
+  display: flex;
+  gap: 0.55rem;
+  flex-shrink: 0;
 }
 
 .weights-panel {
@@ -380,6 +393,57 @@ input:focus {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.25rem;
   margin-top: 1.35rem;
+}
+
+.table-shell {
+  margin-top: 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgba(18, 18, 26, 0.45);
+  overflow: auto;
+}
+
+.country-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.country-table th,
+.country-table td {
+  padding: 0.72rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.country-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: #8f95a7;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: rgba(18, 18, 26, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.country-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table-country-name {
+  display: block;
+  color: #e8eaf1;
+  font-weight: 600;
+}
+
+.table-country-code {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.74rem;
+  color: #8f95a7;
 }
 
 .country-card,
@@ -662,6 +726,15 @@ ul {
   .view-switch {
     flex-wrap: wrap;
     margin-top: 1.2rem;
+  }
+
+  .grid-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ranking-view-toggle {
+    width: 100%;
   }
 
   .view-btn,

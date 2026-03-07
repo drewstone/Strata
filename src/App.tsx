@@ -12,6 +12,7 @@ import {
 
 const strategies: Strategy[] = ['Buyout', 'Growth', 'Low-Risk Entry']
 type ViewMode = 'radar' | 'definitions'
+type RankingView = 'cards' | 'table'
 const scenarioOptions: { label: string; value: ScenarioCase }[] = [
   { label: 'Base Case', value: 'base' },
   { label: 'Bull Case', value: 'bull' },
@@ -239,6 +240,7 @@ const topStrengths = (profile: ScoredCountry, strategy: Strategy): string[] => {
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('radar')
+  const [rankingView, setRankingView] = useState<RankingView>('cards')
   const [sector, setSector] = useState<string>(supportedSectors[0])
   const [strategy, setStrategy] = useState<Strategy>('Buyout')
   const [scenarioCase, setScenarioCase] = useState<ScenarioCase>('base')
@@ -421,12 +423,33 @@ function App() {
           </section>
 
           <section className="grid-header">
-            <h3>Country ranking ({trackedCountries} markets)</h3>
-            <p>
-              Overall score = 35% sector fit + 65% weighted risk-adjusted country factors for{' '}
-              <strong>{strategy}</strong> · <strong>{scenarioOptions.find((s) => s.value === scenarioCase)?.label}</strong> ·{' '}
-              <strong>{dealSizeOptions.find((d) => d.value === dealSize)?.label}</strong>
-            </p>
+            <div className="grid-header-top">
+              <div>
+                <h3>Country ranking ({trackedCountries} markets)</h3>
+                <p>
+                  Overall score = 35% sector fit + 65% weighted risk-adjusted country factors for{' '}
+                  <strong>{strategy}</strong> ·{' '}
+                  <strong>{scenarioOptions.find((s) => s.value === scenarioCase)?.label}</strong> ·{' '}
+                  <strong>{dealSizeOptions.find((d) => d.value === dealSize)?.label}</strong>
+                </p>
+              </div>
+              <div className="ranking-view-toggle">
+                <button
+                  type="button"
+                  className={rankingView === 'cards' ? 'scenario-btn active' : 'scenario-btn'}
+                  onClick={() => setRankingView('cards')}
+                >
+                  Cards
+                </button>
+                <button
+                  type="button"
+                  className={rankingView === 'table' ? 'scenario-btn active' : 'scenario-btn'}
+                  onClick={() => setRankingView('table')}
+                >
+                  Table
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className="weights-panel">
@@ -455,99 +478,141 @@ function App() {
             ))}
           </section>
 
-          <section className="country-grid">
-            {ranked.map((profile, index) => {
-              const expanded = expandedCountryCode === profile.code
-              const isTopThree = index < 3
+          {rankingView === 'cards' ? (
+            <section className="country-grid">
+              {ranked.map((profile, index) => {
+                const expanded = expandedCountryCode === profile.code
+                const isTopThree = index < 3
 
-              return (
-                <article key={profile.code} className={isTopThree ? 'country-card is-top' : 'country-card'}>
-                  <div className="top-row">
-                    <div>
-                      <p className="country-code">{profile.code}</p>
-                      <h4>{profile.name}</h4>
-                      <p className="region">{profile.region}</p>
+                return (
+                  <article key={profile.code} className={isTopThree ? 'country-card is-top' : 'country-card'}>
+                    <div className="top-row">
+                      <div>
+                        <p className="country-code">{profile.code}</p>
+                        <h4>{profile.name}</h4>
+                        <p className="region">{profile.region}</p>
+                      </div>
+                      <div className="score-stack">
+                        <p className="rank-pill">#{index + 1}</p>
+                        <p className="score">{profile.scenarioScore}</p>
+                        <p className={badgeClass(profile.scenarioRecommendation)}>
+                          {profile.scenarioRecommendation}
+                        </p>
+                      </div>
                     </div>
-                    <div className="score-stack">
-                      <p className="rank-pill">#{index + 1}</p>
-                      <p className="score">{profile.scenarioScore}</p>
-                      <p className={badgeClass(profile.scenarioRecommendation)}>
-                        {profile.scenarioRecommendation}
-                      </p>
+
+                    <div className="factor-block">
+                      <p>Sector fit: {profile.sectorScore}</p>
+                      <p>Weighted country factors: {profile.weightedFactorScore}</p>
                     </div>
-                  </div>
 
-                  <div className="factor-block">
-                    <p>Sector fit: {profile.sectorScore}</p>
-                    <p>Weighted country factors: {profile.weightedFactorScore}</p>
-                  </div>
+                    <ul>
+                      {strategyWeights[strategy].map((factor) => {
+                        const raw = profile.factors[factor.key]
+                        const directional = factor.invert ? 100 - raw : raw
+                        const quality = profile.factorDataQuality[factor.key]
+                        const trendClass = `factor-trend factor-trend-${quality.trendDirection}`
+                        const signedDelta =
+                          quality.delta > 0 ? `+${quality.delta.toFixed(1)}` : quality.delta.toFixed(1)
 
-                  <ul>
-                    {strategyWeights[strategy].map((factor) => {
-                      const raw = profile.factors[factor.key]
-                      const directional = factor.invert ? 100 - raw : raw
-                      const quality = profile.factorDataQuality[factor.key]
-                      const trendClass = `factor-trend factor-trend-${quality.trendDirection}`
-                      const signedDelta =
-                        quality.delta > 0 ? `+${quality.delta.toFixed(1)}` : quality.delta.toFixed(1)
+                        return (
+                          <li key={factor.key}>
+                            {factorLabel(factor.key)}: {raw} (model impact: {directional}, weight{' '}
+                            {(factor.weight * 100).toFixed(0)}%)
+                            <span className={trendClass}>
+                              {trendArrow(quality.trendDirection)} {signedDelta}
+                            </span>
+                            <span className="factor-quality">
+                              Refreshed {quality.lastRefreshed} · Confidence{' '}
+                              {Math.round(quality.confidence * 100)}%
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ul>
 
-                      return (
-                        <li key={factor.key}>
-                          {factorLabel(factor.key)}: {raw} (model impact: {directional}, weight{' '}
-                          {(factor.weight * 100).toFixed(0)}%)
-                          <span className={trendClass}>
-                            {trendArrow(quality.trendDirection)} {signedDelta}
-                          </span>
-                          <span className="factor-quality">
-                            Refreshed {quality.lastRefreshed} · Confidence{' '}
-                            {Math.round(quality.confidence * 100)}%
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
+                    <p className="summary">{profile.notes}</p>
+                    <p className="meta">
+                      Confidence {Math.round(profile.confidence * 100)}% · Updated {profile.lastUpdated}
+                    </p>
 
-                  <p className="summary">{profile.notes}</p>
-                  <p className="meta">
-                    Confidence {Math.round(profile.confidence * 100)}% · Updated {profile.lastUpdated}
-                  </p>
+                    <button
+                      className="detail-toggle"
+                      type="button"
+                      onClick={() => setExpandedCountryCode(expanded ? null : profile.code)}
+                    >
+                      {expanded ? 'Hide details' : 'View details'}
+                    </button>
 
-                  <button
-                    className="detail-toggle"
-                    type="button"
-                    onClick={() => setExpandedCountryCode(expanded ? null : profile.code)}
-                  >
-                    {expanded ? 'Hide details' : 'View details'}
-                  </button>
-
-                  {expanded ? (
-                    <div className="detail-panel">
-                      <p className="detail-title">Scenario scores</p>
-                      <p>Base: {profile.scenarios.base}</p>
-                      <p>Bull: {profile.scenarios.bull}</p>
-                      <p>Bear: {profile.scenarios.bear}</p>
-                      <p className="detail-title">Factor citations</p>
-                      {Object.entries(profile.factorCitations).map(([factor, citations]) => (
-                        <div key={factor} className="citation-group">
-                          <p>{factorLabel(factor as FactorKey)}</p>
-                          <ul>
-                            {citations.map((citation) => (
-                              <li key={`${factor}-${citation.url}`}>
-                                <a href={citation.url} target="_blank" rel="noreferrer">
-                                  {citation.label}
-                                </a>{' '}
-                                (checked {citation.lastChecked})
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              )
-            })}
-          </section>
+                    {expanded ? (
+                      <div className="detail-panel">
+                        <p className="detail-title">Scenario scores</p>
+                        <p>Base: {profile.scenarios.base}</p>
+                        <p>Bull: {profile.scenarios.bull}</p>
+                        <p>Bear: {profile.scenarios.bear}</p>
+                        <p className="detail-title">Factor citations</p>
+                        {Object.entries(profile.factorCitations).map(([factor, citations]) => (
+                          <div key={factor} className="citation-group">
+                            <p>{factorLabel(factor as FactorKey)}</p>
+                            <ul>
+                              {citations.map((citation) => (
+                                <li key={`${factor}-${citation.url}`}>
+                                  <a href={citation.url} target="_blank" rel="noreferrer">
+                                    {citation.label}
+                                  </a>{' '}
+                                  (checked {citation.lastChecked})
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })}
+            </section>
+          ) : (
+            <section className="table-shell">
+              <table className="country-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Country</th>
+                    <th>Region</th>
+                    <th>Score</th>
+                    <th>Recommendation</th>
+                    <th>Sector Fit</th>
+                    <th>Country Factors</th>
+                    <th>Confidence</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((profile, index) => (
+                    <tr key={`table-${profile.code}`}>
+                      <td>#{index + 1}</td>
+                      <td>
+                        <span className="table-country-name">{profile.name}</span>
+                        <span className="table-country-code">{profile.code}</span>
+                      </td>
+                      <td>{profile.region}</td>
+                      <td>{profile.scenarioScore}</td>
+                      <td>
+                        <span className={badgeClass(profile.scenarioRecommendation)}>
+                          {profile.scenarioRecommendation}
+                        </span>
+                      </td>
+                      <td>{profile.sectorScore}</td>
+                      <td>{profile.weightedFactorScore}</td>
+                      <td>{Math.round(profile.confidence * 100)}%</td>
+                      <td>{profile.lastUpdated}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </>
       ) : (
         <section className="definitions-panel">
