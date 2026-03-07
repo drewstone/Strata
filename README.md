@@ -48,6 +48,11 @@ Strategies:
 - `Growth`
 - `Low-Risk Entry`
 
+Deal strategy definitions:
+- `Buyout`: Control-oriented acquisitions focused on operational improvement and multiple value-creation levers.
+- `Growth`: Expansion capital or minority-led strategies emphasizing revenue scaling, market share capture, and capability buildout.
+- `Low-Risk Entry`: Capital deployment emphasizing downside protection, stable policy environments, and lower execution volatility.
+
 ## Local development
 Install:
 ```bash

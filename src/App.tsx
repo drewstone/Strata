@@ -183,6 +183,22 @@ function App() {
           </p>
 
           <article className="definition-card">
+            <h4>Deal Strategy Definitions</h4>
+            <p>
+              <strong>Buyout:</strong> Control-oriented acquisitions focused on operational improvement
+              and multiple pathways to value creation.
+            </p>
+            <p>
+              <strong>Growth:</strong> Expansion capital or minority-led strategies prioritizing
+              revenue scaling, market share capture, and capability buildout.
+            </p>
+            <p>
+              <strong>Low-Risk Entry:</strong> Capital deployment emphasizing downside protection,
+              stable policy environments, and lower execution volatility.
+            </p>
+          </article>
+
+          <article className="definition-card">
             <h4>Professional Services</h4>
             <p>
               B2B service-led businesses that primarily generate revenue through recurring contracts,
