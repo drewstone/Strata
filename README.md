@@ -72,7 +72,7 @@ Factors:
 - Geopolitical risk
 - Deal execution risk
 
-Recommendation bands are strategy-specific (`Go`, `Maybe`, `Avoid`).
+Recommendation bands are strategy-specific (`Very strong`, `Strong`, `Moderate`, `Weak`, `Very weak`).
 
 ## Tech stack
 - React + TypeScript + Vite

@@ -11,8 +11,10 @@ export type FactorWeight = {
 }
 
 type RecommendationThreshold = {
-  goMin: number
-  maybeMin: number
+  veryStrongMin: number
+  strongMin: number
+  moderateMin: number
+  weakMin: number
 }
 
 export const strategyWeights: Record<Strategy, FactorWeight[]> = {
@@ -41,26 +43,39 @@ export const strategyWeights: Record<Strategy, FactorWeight[]> = {
 
 const strategyRecommendationThresholds: Record<Strategy, RecommendationThreshold> = {
   Buyout: {
-    goMin: 58,
-    maybeMin: 50,
+    veryStrongMin: 66,
+    strongMin: 58,
+    moderateMin: 50,
+    weakMin: 43,
   },
   Growth: {
-    goMin: 55,
-    maybeMin: 48,
+    veryStrongMin: 63,
+    strongMin: 55,
+    moderateMin: 48,
+    weakMin: 41,
   },
   'Low-Risk Entry': {
-    goMin: 60,
-    maybeMin: 50,
+    veryStrongMin: 68,
+    strongMin: 60,
+    moderateMin: 50,
+    weakMin: 44,
   },
 }
+
+export type RecommendationLabel =
+  | 'Very strong'
+  | 'Strong'
+  | 'Moderate'
+  | 'Weak'
+  | 'Very weak'
 
 export type ScoredCountry = CountryProfile & {
   sectorScore: number
   weightedFactorScore: number
   overallScore: number
-  recommendation: 'Go' | 'Maybe' | 'Avoid'
+  recommendation: RecommendationLabel
   scenarioScore: number
-  scenarioRecommendation: 'Go' | 'Maybe' | 'Avoid'
+  scenarioRecommendation: RecommendationLabel
   dealSizeAdjustment: number
   scenarios: {
     base: number
@@ -100,15 +115,23 @@ const scoreBucket = (
 ): ScoredCountry['recommendation'] => {
   const threshold = strategyRecommendationThresholds[strategy]
 
-  if (score >= threshold.goMin) {
-    return 'Go'
+  if (score >= threshold.veryStrongMin) {
+    return 'Very strong'
   }
 
-  if (score >= threshold.maybeMin) {
-    return 'Maybe'
+  if (score >= threshold.strongMin) {
+    return 'Strong'
   }
 
-  return 'Avoid'
+  if (score >= threshold.moderateMin) {
+    return 'Moderate'
+  }
+
+  if (score >= threshold.weakMin) {
+    return 'Weak'
+  }
+
+  return 'Very weak'
 }
 
 export const scoreCountry = (

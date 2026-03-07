@@ -59,15 +59,23 @@ const trendArrow = (direction: 'up' | 'down' | 'flat'): string => {
 }
 
 const badgeClass = (recommendation: ScoredCountry['recommendation']): string => {
-  if (recommendation === 'Go') {
-    return 'badge badge-go'
+  if (recommendation === 'Very strong') {
+    return 'badge badge-very-strong'
   }
 
-  if (recommendation === 'Maybe') {
-    return 'badge badge-maybe'
+  if (recommendation === 'Strong') {
+    return 'badge badge-strong'
   }
 
-  return 'badge badge-avoid'
+  if (recommendation === 'Moderate') {
+    return 'badge badge-moderate'
+  }
+
+  if (recommendation === 'Weak') {
+    return 'badge badge-weak'
+  }
+
+  return 'badge badge-very-weak'
 }
 
 const parseMoneyToMillions = (raw: string): number | null => {

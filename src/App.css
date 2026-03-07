@@ -533,17 +533,27 @@ h4 {
   margin-top: 0.35rem;
 }
 
-.badge-go {
+.badge-very-strong {
   background: rgba(34, 197, 94, 0.18);
   color: #86efac;
 }
 
-.badge-maybe {
+.badge-strong {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.badge-moderate {
   background: rgba(245, 158, 11, 0.2);
   color: #fcd34d;
 }
 
-.badge-avoid {
+.badge-weak {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fdba74;
+}
+
+.badge-very-weak {
   background: rgba(239, 68, 68, 0.16);
   color: #fca5a5;
 }
