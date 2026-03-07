@@ -36,7 +36,7 @@ export type ScoredCountry = CountryProfile & {
   sectorScore: number
   weightedFactorScore: number
   overallScore: number
-  recommendation: 'Go' | 'Watchlist' | 'Avoid'
+  recommendation: 'Go' | 'Maybe' | 'Avoid'
   scenarios: {
     base: number
     upside: number
@@ -45,12 +45,12 @@ export type ScoredCountry = CountryProfile & {
 }
 
 const scoreBucket = (score: number): ScoredCountry['recommendation'] => {
-  if (score >= 75) {
+  if (score >= 65) {
     return 'Go'
   }
 
-  if (score >= 62) {
-    return 'Watchlist'
+  if (score >= 45) {
+    return 'Maybe'
   }
 
   return 'Avoid'

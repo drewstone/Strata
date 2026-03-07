@@ -14,8 +14,8 @@ const badgeClass = (recommendation: ScoredCountry['recommendation']): string => 
     return 'badge badge-go'
   }
 
-  if (recommendation === 'Watchlist') {
-    return 'badge badge-watch'
+  if (recommendation === 'Maybe') {
+    return 'badge badge-maybe'
   }
 
   return 'badge badge-avoid'
