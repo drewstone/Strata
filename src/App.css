@@ -762,6 +762,8 @@ li:first-child {
 .radar-chart {
   width: 100%;
   height: auto;
+  background: var(--surface-0);
+  border-radius: 4px;
 }
 
 .radar-legend {
@@ -794,7 +796,11 @@ li:first-child {
 
 .definitions-panel {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.625rem;
+}
+
+.definitions-panel h3 {
+  margin: 0 0 0.25rem;
 }
 
 .definitions-panel > p {
@@ -841,6 +847,7 @@ li:first-child {
 
 .research-run-btn {
   height: 2.25rem;
+  min-width: 10rem;
   padding: 0 1.25rem;
   border: 1px solid var(--border-hover);
   border-radius: 4px;
