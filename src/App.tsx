@@ -36,6 +36,9 @@ function App() {
 
   return (
     <main className="app-shell">
+      <div className="ambient-orb orb-top" aria-hidden="true" />
+      <div className="ambient-orb orb-right" aria-hidden="true" />
+
       <header className="hero">
         <p className="eyebrow">Strata Intelligence</p>
         <h1>PE Expansion Radar</h1>
