@@ -5,19 +5,21 @@ Live site: [https://sarah-odell.github.io/Strata/](https://sarah-odell.github.io
 Strata is a PE/corp-dev decision support tool for market expansion screening.
 
 App sections:
-- `Radar`: scoring, ranking table/cards, and transparent factor breakdowns
+- `Radar`: scoring, ranking table/cards, selected-market detail panel, and transparent factor breakdowns
 - `Deal Lab`: portfolio adjacency inputs, prompt-based tailored recommendations, and a deal profile radar chart auto-bound to prompt context
 - `Industry Definitions`: shared taxonomy and strategy/deal-size definitions
 
 ## What it does
 - Scores countries by strategy and industry.
 - Shows transparent factor scoring with citations.
-- Provides scenario views (`base`, `upside`, `downside`).
+- Provides scenario views (`base`, `bull`, `bear`).
+- Defaults to table view in Radar, with the selected-market panel above the ranking table.
 - Adds a deal-team prompt tool that parses user context (fund size, target geography, strategy cues) and returns a tailored top-3 market view.
 - Supports portfolio adjacency modeling (existing sectors, regions, and capabilities) that adjusts market rankings.
 - Includes a deal-profile radar chart for each market (market position, growth, technology, customer quality, regulatory risk, integration risk).
 - Monitors regulation sources across all tracked markets on a schedule.
-- Exports memo drafts (`.md` and `.pdf`).
+- Exports Deal Lab memo drafts in-app as `.md`.
+- Supports CLI memo export as `.md` and `.pdf` into `reports/`.
 - Stores snapshots and monitor runs via a lightweight backend API.
 
 ## Coverage
@@ -68,9 +70,9 @@ Scenario cases:
 - `Bear Case`: Downside environment with weaker growth and higher regulatory/geopolitical friction.
 
 Deal size bands:
-- `Small Deal`: Under $250 million enterprise value
-- `Mid Deal`: $250 million to $1 billion enterprise value
-- `Large Deal`: Over $1 billion enterprise value
+- `$25M-$250M`
+- `$250M-$1B`
+- `$1B+`
 
 ## Scoring model
 Overall score:
@@ -151,6 +153,9 @@ Frontend auto-deploys to GitHub Pages on every push to `main`.
 
 Workflow:
 - `.github/workflows/deploy-frontend.yml`
+
+If you do not see the latest UI on the live site, force refresh and load:
+- [https://sarah-odell.github.io/Strata/?v=latest](https://sarah-odell.github.io/Strata/?v=latest)
 
 ## Local data locations
 - Indicator overrides: `src/data/indicatorOverrides.ts`
