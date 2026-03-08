@@ -1,18 +1,19 @@
 # Strata: PE Expansion Intelligence
 
-Live site: [https://sarah-odell.github.io/Strata/](https://sarah-odell.github.io/Strata/)
+Live frontend: [https://sarah-odell.github.io/Strata/](https://sarah-odell.github.io/Strata/)
 
-Strata is a PE/corp-dev decision support tool for market expansion screening. It combines quantitative country scoring with an AI-powered multi-agent research pipeline to produce investment-grade market assessments.
+Strata is a private equity and corporate development market-screening application for evaluating expansion markets by attractiveness, feasibility, and execution risk. It combines quantitative country scoring with an AI-powered multi-agent research pipeline to produce investment-grade market assessments.
 
-## App sections
+## Product Surfaces
 
-- **Radar** — Scoring table with sortable columns, ranking cards, transparent factor breakdowns, deal profile radar chart bound to prompt context
-- **Deal Lab** — Portfolio adjacency inputs, prompt-based tailored recommendations (parses fund size, target geography, strategy cues), deal-team memo exports
-- **Research** — AI ensemble research with 5 specialist personas, prompt-driven analysis, single-market or batch scans (Top 5 / Top 10 / All 53), structured verdict cards with collapsible sections
+- **Deal Lab** — Prompt-driven recommendation logic, fund-size aware assumptions, strategy/sector/deal-size toggles, portfolio adjacency inputs, and memo export. Default landing tab.
+- **Radar** — Country ranking table (sortable columns) and cards, selected-market detail panel, weighted factors with confidence/freshness/trend, and scenario sensitivity.
+- **Deal Profile Radar** — Top-3 recommendation profile comparison with factor-level definitions.
+- **Research** — Backend-orchestrated multi-agent market research with 5 specialist personas, prompt-driven analysis, single-market or batch scans (Top 5 / Top 10 / All 53), structured verdict cards with collapsible sections.
 
-## Coverage
+## Current Coverage
 
-53 tracked markets across 6 regions:
+### Markets (53)
 
 | Region | Markets |
 |--------|---------|
@@ -23,32 +24,69 @@ Strata is a PE/corp-dev decision support tool for market expansion screening. It
 | Africa | ZA, NG, EG, KE, MA |
 | Latin America | BR, MX, CL, CO, AR, PE, CR |
 
-12 industries: Professional Services, Healthcare Services, Industrial Technology, Aerospace & Defense, Software & Data Services, Financial Services, Energy & Infrastructure, Consumer & Retail, Logistics & Transportation, Education & Training, Real Estate & Built Environment, Food & Agriculture
+### Industries
+Professional Services, Healthcare Services, Industrial Technology, Aerospace & Defense, Software & Data Services, Financial Services, Energy & Infrastructure, Consumer & Retail, Logistics & Transportation, Education & Training, Real Estate & Built Environment, Food & Agriculture
 
-3 strategies: Buyout, Growth, Low-Risk Entry
+### Deal Strategy Modes
+- `Buyout`
+- `Growth`
+- `Low-Risk Entry`
 
-## Scoring model
+### Scenario Modes
+- `Base Case`: baseline macro and policy assumptions.
+- `Bull Case`: more favorable demand/execution environment.
+- `Bear Case`: stressed operating and policy environment.
 
-Overall score = 35% sector fit + 65% weighted country factors.
+### Deal Size Modes (USD)
+- `$25M-$250M`
+- `$250M-$1B`
+- `$1B+`
 
-**Factors** (weights vary by strategy, always sum to 1.0):
-- Economic strength
-- Regulatory complexity (inverted — lower is better)
-- Tax/tariff friction (inverted)
-- Geopolitical risk (inverted)
-- Deal execution risk (inverted)
+## Methodology
 
-**Scenario stress testing:** Bull and bear cases apply independent shifts to each factor (e.g., bear: economicStrength -10, geopoliticalRisk +10) rather than flat score adjustments. This produces differentiated scenario spreads per country.
+### Score Construction
+- `Overall Score = 35% Sector Fit + 65% Country Factor Score`
+- Country factor weights are dynamically rebalanced by strategy, sector, and deal size (always sum to 1.0).
+- Recommendation bands: Very strong, Strong, Moderate, Weak, Very weak (strategy-specific thresholds).
 
-**Deal size adjustment:** Small/large deals shift scores based on friction or scale factors.
+### Attractiveness Factors
+- Market size and depth
+- Market growth momentum
+- Customer density
+- Digital readiness
+- Strategic adjacency overlay (from Deal Lab profile)
 
-**Portfolio adjacency overlay:** 0 to +8 points based on existing sector/region footprint and operational capabilities.
+### Feasibility and Execution Factors
+- Regulatory complexity
+- Licensing complexity
+- Language barriers (execution proxy)
+- Competition intensity (financial proxy)
+- Talent availability
+- Tax and tariff friction
+- Geopolitical risk
+- Deal execution risk
 
-Recommendation bands are strategy-specific: Very strong, Strong, Moderate, Weak, Very weak.
+### Scenario Stress Testing
+Bull and bear cases apply independent shifts to each factor (e.g., bear: economicStrength -10, geopoliticalRisk +10) rather than flat score adjustments. This produces differentiated scenario spreads per country.
+
+### Portfolio Adjacency Overlay
+0 to +8 points based on existing sector/region footprint and operational capabilities.
+
+### Transparency in UI
+Per-factor value, weight, contribution, trend direction, confidence, and last refreshed timestamp. Explicit display of model assumptions in Deal Lab and Radar contexts.
+
+## Data Sources (IC-grade priority)
+Primary sources used in ingestion and market factors:
+- International Monetary Fund (IMF)
+- World Bank World Development Indicators (WDI)
+- World Bank Global Financial Development Database (GFDD)
+- OECD-linked national accounts and reference series where available
 
 **Live indicator overrides:** The ingestion pipeline fetches GDP growth, FDI, inflation, tariff, and trade openness data from the World Bank and IMF APIs, scoring against absolute benchmarks (not relative ranking). Overrides `economicStrength` and `taxTariffFriction` for all 53 markets.
 
-## Research pipeline
+Core indicator mapping: `ingestion/update-indicators.mjs` → `src/data/indicatorOverrides.ts`
+
+## Research Pipeline
 
 5 AI analyst personas run in parallel via `claude -p` CLI:
 
@@ -68,22 +106,55 @@ Results are aggregated into an ensemble score with confidence-weighted averaging
 
 **Batch scanning:** Run research across Top 5, Top 10, or all 53 markets in parallel.
 
-## Tech stack
+## Research Backend
+The frontend can run with no backend for static scoring views, but `Research` requires a running backend.
 
+### Local backend
+```bash
+npm run backend
+```
+Default URL: `http://localhost:8787`
+
+### Backend environment variables
+- `STRATA_BACKEND_PORT` (default `8787`)
+- `STRATA_BACKEND_API_KEY` (enables `X-API-Key` auth)
+- `STRATA_BACKEND_CORS_ORIGINS` (comma-separated allowlist or `*`)
+- `STRATA_RATE_LIMIT_WINDOW_MS` (default `60000`)
+- `STRATA_RATE_LIMIT_MAX` (default `30`)
+- `STRATA_RESEARCH_JOB_TTL_HOURS` (default `24`)
+- `STRATA_RESEARCH_MAX_BATCH` (default `20`)
+- `STRATA_RESEARCH_MAX_PROMPT_CHARS` (default `5000`)
+- `STRATA_CLAUDE_CMD` (default `claude`)
+
+### Backend endpoints
+- `GET /health`
+- `GET /ready`
+- `POST /api/research`
+- `GET /api/research/jobs/:id`
+- `POST /api/research/jobs/:id/cancel`
+- `POST /api/research/batch`
+- `GET /api/research/results`
+- `GET /api/score-snapshots`
+- `POST /api/score-snapshots`
+- `GET /api/monitor-runs`
+- `POST /api/monitor-runs`
+
+## Tech Stack
 - React + TypeScript + Vite (frontend)
-- Express (backend API on port 8787)
+- Express (backend API)
 - CSS custom design tokens ("Restrained Dark Intelligence" design system)
 - `claude -p` CLI for agentic research
 - World Bank / IMF APIs for live indicator ingestion
 - Playwright for regulation monitoring
 
-## Run locally
+## Local Development
 
+Install dependencies:
 ```bash
 npm install
 ```
 
-Frontend (port 5173):
+Frontend dev server (port 5173):
 ```bash
 npm run dev
 ```
@@ -98,7 +169,19 @@ Both together:
 npm run backend & npm run dev
 ```
 
-## Key scripts
+Build/lint:
+```bash
+npm run build
+npm run lint
+```
+
+Preview production build:
+```bash
+npm run build
+npm run preview
+```
+
+## Operations Scripts
 
 Indicator ingestion (World Bank + IMF data for all 53 markets):
 ```bash
@@ -110,14 +193,19 @@ Research (single market):
 npm run research -- --country US --countryCode US --sector "Professional Services" --strategy Buyout --prompt "What are the key risks?"
 ```
 
-Regulation monitor (one-shot):
+Regulation monitor once:
 ```bash
 npm run monitor:regulations:once
 ```
 
-Regulation monitor (every 6h):
+Regulation monitor schedule:
 ```bash
 npm run monitor:regulations
+```
+
+Custom monitor cron:
+```bash
+REG_MONITOR_CRON="0 */4 * * *" npm run monitor:regulations
 ```
 
 Memo export:
@@ -125,41 +213,26 @@ Memo export:
 npm run memo:export -- --country DE --strategy Buyout --sector "Industrial Technology"
 ```
 
-Snapshot persistence:
+Persist score snapshots via backend:
 ```bash
 STRATA_BACKEND_URL=http://localhost:8787 npm run snapshot:persist
 ```
 
-Build and lint:
-```bash
-npm run build
-npm run lint
-```
+## Deployment
+- Frontend auto-deploys to GitHub Pages from `main` via `.github/workflows/deploy-frontend.yml`.
+- Research backend deployment is not included in this repository's GitHub Pages deployment.
 
-## Backend API
+If you do not see the latest frontend, force refresh with:
+- [https://sarah-odell.github.io/Strata/?v=latest](https://sarah-odell.github.io/Strata/?v=latest)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/snapshots` | List score snapshots |
-| POST | `/api/snapshots` | Save a score snapshot |
-| GET | `/api/monitor-runs` | List regulation monitor runs |
-| POST | `/api/monitor-runs` | Save a monitor run |
-| POST | `/api/research` | Start single-market research job |
-| GET | `/api/research/jobs/:id` | Poll research job status |
-| POST | `/api/research/batch` | Start multi-market batch research |
-| GET | `/api/research/results` | List completed research results |
-
-## Auto-deploy
-
-Frontend auto-deploys to GitHub Pages on every push to `main`.
-
-Workflow: `.github/workflows/deploy-frontend.yml`
-
-## Local data locations
-
-- Indicator overrides: `src/data/indicatorOverrides.ts`
-- Research results: `.strata/research/`
-- Monitor state: `.strata/regulation-monitor-state.json`
+## Local Artifacts
 - Backend store: `.strata/backend-store.json`
-- Generated reports/memos: `reports/`
+- Research jobs: `.strata/research-jobs.json`
+- Research output files: `.strata/research/`
+- Regulation monitor state: `.strata/regulation-monitor-state.json`
+- Indicator quality outputs:
+  - `.strata/indicator-raw-latest.json`
+  - `.strata/indicator-quality-latest.json`
+
+## Notes
+- `.strata/` and `reports/` are gitignored local runtime artifacts.

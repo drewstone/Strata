@@ -7,11 +7,12 @@ import {
   type PortfolioCapability,
   type RecommendationLabel,
   rankCountries,
-  strategyWeights,
+  getEffectiveFactorWeights,
   type ScenarioCase,
   type ScoredCountry,
   type Strategy,
 } from './lib/scoring'
+import { isResearchCreateResponse, isResearchJobResponse } from './lib/apiContracts'
 
 const strategies: Strategy[] = ['Buyout', 'Growth', 'Low-Risk Entry']
 type ViewMode = 'radar' | 'dealLab' | 'research'
@@ -97,11 +98,45 @@ const personaLabel = (id: string): string =>
     'sector-specialist': 'Sector Specialist',
   })[id] ?? id
 
-const DEFAULT_BACKEND_URL = 'http://localhost:8787'
+const DEFAULT_BACKEND_URL = import.meta.env.VITE_STRATA_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:8787' : '')
 const BACKEND_URL_STORAGE_KEY = 'strata_backend_url'
+const FACTOR_FRESHNESS_SLA_DAYS = 30
 
-const factorLabel = (key: FactorKey): string =>
-  key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
+const formatResearchError = (raw: string): string => {
+  const message = raw.trim()
+  if (!message) {
+    return 'Research job failed during execution.'
+  }
+
+  if (message.includes('spawn claude ENOENT')) {
+    return 'Research runtime not found on backend host (missing `claude` CLI). Install Claude CLI or set STRATA_CLAUDE_CMD to a valid command.'
+  }
+
+  if (message.toLowerCase().includes('timed out')) {
+    return 'Research runtime timed out. Retry or increase runtime timeout on backend.'
+  }
+
+  return message
+}
+
+const factorLabel = (key: FactorKey): string => {
+  const labels: Record<FactorKey, string> = {
+    economicStrength: 'Economic Strength',
+    regulatoryComplexity: 'Regulatory Complexity',
+    taxTariffFriction: 'Tax/Tariff Friction',
+    geopoliticalRisk: 'Geopolitical Risk',
+    dealExecutionRisk: 'Deal Execution Risk',
+    marketSizeDepth: 'Market Size & Depth',
+    marketGrowthMomentum: 'Market Growth Momentum',
+    marketConcentrationRisk: 'Competition Intensity (Financial Proxy)',
+    customerDensity: 'Customer Density',
+    digitalReadiness: 'Digital Readiness',
+    licensingComplexity: 'Licensing Complexity',
+    languageBarrier: 'Language Barrier',
+    talentAvailability: 'Talent Availability',
+  }
+  return labels[key]
+}
 
 const trendArrow = (direction: 'up' | 'down' | 'flat'): string => {
   if (direction === 'up') {
@@ -333,8 +368,8 @@ const inferAssumptions = (
   }
 }
 
-const topStrengths = (profile: ScoredCountry, strategy: Strategy): string[] => {
-  return strategyWeights[strategy]
+const topStrengths = (profile: ScoredCountry, strategy: Strategy, dealSize: DealSize, sector: string): string[] => {
+  return getEffectiveFactorWeights(strategy, dealSize, sector)
     .map((factor) => {
       const raw = profile.factors[factor.key]
       const directional = factor.invert ? 100 - raw : raw
@@ -369,7 +404,7 @@ const dealProfileMetrics = (profile: ScoredCountry): RadarMetric[] => {
 
   return [
     { label: 'Market Position', value: profile.scenarioScore },
-    { label: 'Growth', value: profile.factors.economicStrength },
+    { label: 'Growth', value: profile.factors.marketGrowthMomentum },
     { label: 'Technology', value: Math.round(technology) },
     { label: 'Customer Quality', value: Math.round(customerQuality) },
     { label: 'Regulatory Risk', value: profile.factors.regulatoryComplexity },
@@ -424,7 +459,7 @@ const loadDealLabExports = (): DealLabExportEntry[] => {
 }
 
 function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>('radar')
+  const [viewMode, setViewMode] = useState<ViewMode>('dealLab')
   const [rankingView, setRankingView] = useState<RankingView>('table')
   const [sector, setSector] = useState<string>(supportedSectors[0])
   const [strategy, setStrategy] = useState<Strategy>('Buyout')
@@ -435,6 +470,7 @@ function App() {
     'We run a control-focused fund and need our next platform in a politically stable OECD market with strong logistics density and manageable execution risk; we are considering an initial foothold in the Netherlands.',
   )
   const [fundSizeInput, setFundSizeInput] = useState<string>('2000')
+  const [autoApplyPromptInference, setAutoApplyPromptInference] = useState<boolean>(true)
   const [portfolioSectors, setPortfolioSectors] = useState<string[]>([])
   const [portfolioRegions, setPortfolioRegions] = useState<string[]>([])
   const [portfolioCapabilities, setPortfolioCapabilities] = useState<PortfolioCapability[]>([])
@@ -442,7 +478,8 @@ function App() {
   const [researchSector, setResearchSector] = useState<string>(supportedSectors[0])
   const [researchStrategy, setResearchStrategy] = useState<Strategy>('Buyout')
   const [researchPrompt, setResearchPrompt] = useState<string>('')
-  const [researchStatus, setResearchStatus] = useState<'idle' | 'running' | 'completed' | 'failed'>('idle')
+  const [researchStatus, setResearchStatus] = useState<'idle' | 'running' | 'completed' | 'failed' | 'canceled'>('idle')
+  const [researchError, setResearchError] = useState<string | null>(null)
   const [researchResults, setResearchResults] = useState<ResearchResult[]>([])
   const [selectedResearch, setSelectedResearch] = useState<ResearchResult | null>(null)
   const [batchStatus, setBatchStatus] = useState<{ total: number; completed: number; running: boolean }>({ total: 0, completed: 0, running: false })
@@ -501,6 +538,7 @@ function App() {
         case 'region': return dir * a.region.localeCompare(b.region)
         case 'score': return dir * (a.scenarioScore - b.scenarioScore)
         case 'recommendation': return dir * (a.scenarioScore - b.scenarioScore)
+        case 'deployability': return dir * (a.deployabilityScore - b.deployabilityScore)
         case 'sectorFit': return dir * (a.sectorScore - b.sectorScore)
         case 'factors': return dir * (a.weightedFactorScore - b.weightedFactorScore)
         case 'adjacency': return dir * (a.portfolioAdjacencyAdjustment - b.portfolioAdjacencyAdjustment)
@@ -525,7 +563,7 @@ function App() {
   const selectedTableProfile =
     sortedRanked.find((profile) => profile.code === selectedTableCountryCode) ?? sortedRanked[0] ?? null
   const backendBaseUrl = useMemo(
-    () => backendUrlInput.trim().replace(/\/+$/g, '') || DEFAULT_BACKEND_URL,
+    () => backendUrlInput.trim().replace(/\/+$/g, ''),
     [backendUrlInput],
   )
 
@@ -556,12 +594,19 @@ function App() {
 
   const trackedCountries = ranked.length
   const radarProfiles = (tailoredTopThree.length > 0 ? tailoredTopThree : ranked.slice(0, 3)).slice(0, 3)
+  const activeWeights = useMemo(
+    () => getEffectiveFactorWeights(strategy, dealSize, sector),
+    [strategy, dealSize, sector],
+  )
   const radarSize = 380
   const radarCenter = radarSize / 2
   const radarRadius = 120
   const radarLevels = [20, 40, 60, 80, 100]
 
   const loadResearchResults = async () => {
+    if (!backendBaseUrl) {
+      return
+    }
     try {
       const response = await fetch(`${backendBaseUrl}/api/research/results`)
       const data = await response.json()
@@ -570,6 +615,10 @@ function App() {
   }
 
   const checkBackendConnection = async (baseUrl: string) => {
+    if (!baseUrl) {
+      setBackendStatus('unknown')
+      return false
+    }
     setBackendStatus('checking')
     try {
       const response = await fetch(`${baseUrl}/health`)
@@ -592,6 +641,13 @@ function App() {
 
   const triggerResearch = async () => {
     const countryName = countryProfiles.find((c) => c.code === researchCountry)?.name ?? researchCountry
+    setResearchError(null)
+    const isBackendOnline = await checkBackendConnection(backendBaseUrl)
+    if (!isBackendOnline) {
+      setResearchStatus('failed')
+      setResearchError(`Backend is not reachable at ${backendBaseUrl}.`)
+      return
+    }
     setResearchStatus('running')
     try {
       const response = await fetch(`${backendBaseUrl}/api/research`, {
@@ -605,23 +661,50 @@ function App() {
           prompt: researchPrompt || undefined,
         }),
       })
-      const { jobId } = await response.json()
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed with HTTP ${response.status}`)
+      }
+      const createPayload = await response.json()
+      if (!isResearchCreateResponse(createPayload)) {
+        throw new Error('Unexpected response shape from research endpoint.')
+      }
+      const { jobId } = createPayload
       const poll = setInterval(async () => {
         try {
           const jobRes = await fetch(`${backendBaseUrl}/api/research/jobs/${jobId}`)
+          if (!jobRes.ok) {
+            throw new Error(`Job polling failed with HTTP ${jobRes.status}`)
+          }
           const job = await jobRes.json()
+          if (!isResearchJobResponse(job)) {
+            throw new Error('Unexpected response shape while polling research job.')
+          }
           if (job.status !== 'running') {
             clearInterval(poll)
             setResearchStatus(job.status)
-            if (job.status === 'completed') loadResearchResults()
+            if (job.status === 'completed') {
+              setResearchError(null)
+              loadResearchResults()
+            } else if (job.status === 'failed') {
+              setResearchError(formatResearchError(job.error || 'Research job failed during execution.'))
+            }
           }
-        } catch {
+        } catch (error) {
           clearInterval(poll)
           setResearchStatus('failed')
+          setResearchError(
+            formatResearchError(
+              error instanceof Error ? error.message : 'Failed while polling research job status.',
+            ),
+          )
         }
       }, 5000)
-    } catch {
+    } catch (error) {
       setResearchStatus('failed')
+      setResearchError(
+        formatResearchError(error instanceof Error ? error.message : 'Failed to submit research request.'),
+      )
     }
   }
 
@@ -690,11 +773,24 @@ function App() {
     checkBackendConnection(backendBaseUrl)
   }
 
+  const factorIsStale = (lastRefreshed: string): boolean => {
+    const parsed = new Date(lastRefreshed)
+    if (Number.isNaN(parsed.getTime())) {
+      return true
+    }
+    return Date.now() - parsed.getTime() > FACTOR_FRESHNESS_SLA_DAYS * 24 * 60 * 60 * 1000
+  }
+
   const createDealLabMemo = (): string => {
     const generatedAt = new Date().toISOString()
     const topThreeLines = tailoredTopThree
       .map((profile, index) => {
-        const strengths = topStrengths(profile, promptAssumptions.strategy).join(' + ')
+        const strengths = topStrengths(
+          profile,
+          promptAssumptions.strategy,
+          promptAssumptions.dealSize,
+          promptAssumptions.sector,
+        ).join(' + ')
         return `${index + 1}. ${profile.name} (${profile.code}) — Score ${profile.scenarioScore} · ${profile.scenarioRecommendation}\n   - Why: ${strengths}\n   - Region: ${profile.region}`
       })
       .join('\n')
@@ -767,17 +863,17 @@ function App() {
       <nav className="view-switch">
         <button
           type="button"
-          className={viewMode === 'radar' ? 'view-btn active' : 'view-btn'}
-          onClick={() => setViewMode('radar')}
-        >
-          Radar
-        </button>
-        <button
-          type="button"
           className={viewMode === 'dealLab' ? 'view-btn active' : 'view-btn'}
           onClick={() => setViewMode('dealLab')}
         >
           Deal Lab
+        </button>
+        <button
+          type="button"
+          className={viewMode === 'radar' ? 'view-btn active' : 'view-btn'}
+          onClick={() => setViewMode('radar')}
+        >
+          Radar
         </button>
         <button
           type="button"
@@ -897,7 +993,7 @@ function App() {
                     </div>
 
                     <ul>
-                      {strategyWeights[strategy].map((factor) => {
+                      {activeWeights.map((factor) => {
                         const raw = profile.factors[factor.key]
                         const directional = factor.invert ? 100 - raw : raw
                         const quality = profile.factorDataQuality[factor.key]
@@ -913,7 +1009,9 @@ function App() {
                               {trendArrow(quality.trendDirection)} {signedDelta}
                             </span>
                             <span className="factor-quality">
-                              Refreshed {quality.lastRefreshed} · Confidence{' '}
+                              Refreshed {quality.lastRefreshed}
+                              {factorIsStale(quality.lastRefreshed) ? ' · Stale' : ''}
+                              {' '}· Confidence{' '}
                               {Math.round(quality.confidence * 100)}%
                             </span>
                           </li>
@@ -963,7 +1061,30 @@ function App() {
               })}
             </section>
           ) : (
+            <>
             <section className="table-shell">
+              {selectedTableProfile ? (
+                <div className="table-focus-panel">
+                  <div className="table-focus-header">
+                    <div>
+                      <p className="top-rank">Selected market</p>
+                      <h4>{selectedTableProfile.name}</h4>
+                      <p className="region">{selectedTableProfile.region}</p>
+                    </div>
+                    <div className="score-stack">
+                      <p className="score">{selectedTableProfile.scenarioScore}</p>
+                      <p className={badgeClass(selectedTableProfile.scenarioRecommendation)}>
+                        {selectedTableProfile.scenarioRecommendation}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="summary">{selectedTableProfile.notes}</p>
+                  <p className="meta">
+                    Deployability: {selectedTableProfile.deployabilityScore} · Strongest modeled factors: {topStrengths(selectedTableProfile, strategy, dealSize, sector).join(' + ')}
+                  </p>
+                </div>
+              ) : null}
+
               <table className="country-table">
                 <thead>
                   <tr>
@@ -972,6 +1093,7 @@ function App() {
                     <th className="sortable-th" onClick={() => toggleSort('region')}>Region{sortIndicator('region')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('score')}>Score{sortIndicator('score')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('recommendation')}>Rec.{sortIndicator('recommendation')}</th>
+                    <th className="sortable-th" onClick={() => toggleSort('deployability')}>Deployability{sortIndicator('deployability')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('sectorFit')}>Sector Fit{sortIndicator('sectorFit')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('factors')}>Factors{sortIndicator('factors')}</th>
                     <th className="sortable-th" onClick={() => toggleSort('adjacency')}>
@@ -1012,6 +1134,7 @@ function App() {
                           {profile.scenarioRecommendation}
                         </span>
                       </td>
+                      <td>{profile.deployabilityScore}</td>
                       <td>{profile.sectorScore}</td>
                       <td>{profile.weightedFactorScore}</td>
                       <td>+{profile.portfolioAdjacencyAdjustment}</td>
@@ -1022,39 +1145,40 @@ function App() {
                 </tbody>
               </table>
             </section>
+            </>
           )}
 
-          {rankingView === 'table' && selectedTableProfile ? (
-            <section className="table-focus-panel">
-              <div className="table-focus-header">
-                <div>
-                  <p className="top-rank">Selected market</p>
-                  <h4>{selectedTableProfile.name}</h4>
-                  <p className="region">{selectedTableProfile.region}</p>
-                </div>
-                <div className="score-stack">
-                  <p className="score">{selectedTableProfile.scenarioScore}</p>
-                  <p className={badgeClass(selectedTableProfile.scenarioRecommendation)}>
-                    {selectedTableProfile.scenarioRecommendation}
-                  </p>
-                </div>
-              </div>
-              <p className="summary">{selectedTableProfile.notes}</p>
-              <p className="meta">
-                Strongest modeled factors: {topStrengths(selectedTableProfile, strategy).join(' + ')}
-              </p>
-            </section>
-          ) : null}
-
           <section className="weights-panel">
-            <p className="weights-title">Factor Weights — {strategy}</p>
+            <p className="weights-title">Factor Weights — {strategy} · {dealSizeOptions.find((option) => option.value === dealSize)?.label}</p>
             <div className="weights-grid">
-              {strategyWeights[strategy].map((factor) => (
+              {activeWeights.map((factor) => (
                 <div key={`weight-${factor.key}`} className="weight-chip">
                   <p>{factorLabel(factor.key)}</p>
                   <span>{Math.round(factor.weight * 100)}% · {factor.invert ? 'Lower is better' : 'Higher is better'}</span>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section className="weights-panel">
+            <p className="weights-title">Methodology Transparency</p>
+            <div className="weights-grid">
+              <div className="weight-chip">
+                <p>Attractiveness</p>
+                <span>Market Size & Depth · Market Growth Momentum · Customer Density · Digital Readiness · Strategic Adjacency</span>
+              </div>
+              <div className="weight-chip">
+                <p>Feasibility</p>
+                <span>Regulatory Complexity · Licensing Complexity · Language Barrier · Competition Intensity · Talent Availability</span>
+              </div>
+              <div className="weight-chip">
+                <p>Risk Controls</p>
+                <span>Tax/Tariff Friction · Geopolitical Risk · Deal Execution Risk</span>
+              </div>
+              <div className="weight-chip">
+                <p>Source caveats</p>
+                <span>Competition Intensity currently uses financial concentration proxies; language barrier can use modeled proxies where direct data coverage is limited.</span>
+              </div>
             </div>
           </section>
         </>
@@ -1122,7 +1246,9 @@ function App() {
                 onChange={(event) => {
                   const nextPrompt = event.target.value
                   setDealPrompt(nextPrompt)
-                  applyPromptDrivenSelections(nextPrompt, fundSizeInput)
+                  if (autoApplyPromptInference) {
+                    applyPromptDrivenSelections(nextPrompt, fundSizeInput)
+                  }
                 }}
                 placeholder="I am a $2B fund evaluating expansion options in Germany for aerospace & defense. Where should we prioritize?"
               />
@@ -1135,7 +1261,9 @@ function App() {
                 onChange={(event) => {
                   const nextFundSize = event.target.value
                   setFundSizeInput(nextFundSize)
-                  applyPromptDrivenSelections(dealPrompt, nextFundSize)
+                  if (autoApplyPromptInference) {
+                    applyPromptDrivenSelections(dealPrompt, nextFundSize)
+                  }
                 }}
                 placeholder="2000"
               />
@@ -1146,7 +1274,26 @@ function App() {
               <span>Sector: {promptAssumptions.sector}</span>
               <span>Scenario: {scenarioLabel[promptAssumptions.scenarioCase]}</span>
               <span>Deal size: {dealSizeOptions.find((option) => option.value === promptAssumptions.dealSize)?.label}</span>
+              <span>Prompt inference mode: {autoApplyPromptInference ? 'Auto-apply' : 'Manual apply'}</span>
               {targetCountryProfile ? <span>Target country detected: {targetCountryProfile.name}</span> : null}
+            </div>
+            <div className="scenario-toggle">
+              <button
+                type="button"
+                className={autoApplyPromptInference ? 'scenario-btn active' : 'scenario-btn'}
+                onClick={() => setAutoApplyPromptInference((current) => !current)}
+              >
+                {autoApplyPromptInference ? 'Auto Inference On' : 'Auto Inference Off'}
+              </button>
+              {!autoApplyPromptInference ? (
+                <button
+                  type="button"
+                  className="scenario-btn"
+                  onClick={() => applyPromptDrivenSelections(dealPrompt, fundSizeInput)}
+                >
+                  Apply Inferred Assumptions
+                </button>
+              ) : null}
             </div>
 
             <div className="prompt-results">
@@ -1157,7 +1304,7 @@ function App() {
                   <p className="top-score">{profile.scenarioScore}</p>
                   <p className={badgeClass(profile.scenarioRecommendation)}>{profile.scenarioRecommendation}</p>
                   <p className="summary">
-                    Why: strong {topStrengths(profile, promptAssumptions.strategy).join(' + ')} under{' '}
+                    Why: strong {topStrengths(profile, promptAssumptions.strategy, promptAssumptions.dealSize, promptAssumptions.sector).join(' + ')} under{' '}
                     {promptAssumptions.strategy.toLowerCase()} weighting.
                   </p>
                 </article>
@@ -1402,10 +1549,22 @@ function App() {
                   type="text"
                   value={backendUrlInput}
                   onChange={(e) => setBackendUrlInput(e.target.value)}
-                  placeholder={DEFAULT_BACKEND_URL}
+                  placeholder={DEFAULT_BACKEND_URL || 'https://your-backend.example.com'}
                 />
               </label>
               <div className="backend-actions">
+                <button type="button" className="scenario-btn" onClick={() => setBackendUrlInput('http://localhost:8787')}>
+                  Use Localhost
+                </button>
+                {import.meta.env.VITE_STRATA_BACKEND_URL ? (
+                  <button
+                    type="button"
+                    className="scenario-btn"
+                    onClick={() => setBackendUrlInput(import.meta.env.VITE_STRATA_BACKEND_URL)}
+                  >
+                    Use Hosted Backend
+                  </button>
+                ) : null}
                 <button type="button" className="scenario-btn" onClick={saveBackendUrl}>
                   Save & Check
                 </button>
@@ -1416,7 +1575,9 @@ function App() {
                       ? 'Checking backend...'
                       : backendStatus === 'offline'
                         ? `Not reachable (${backendBaseUrl})`
-                        : 'Connection not checked yet'}
+                        : backendBaseUrl
+                          ? 'Connection not checked yet'
+                          : 'No backend URL configured'}
                 </p>
               </div>
             </div>
@@ -1474,11 +1635,15 @@ function App() {
             )}
             {researchStatus === 'failed' && (
               <p className="research-status-text research-error">
-                Research failed. Ensure backend is reachable at {backendBaseUrl} (for local use run `npm run backend`).
+                Research failed. {researchError ?? `Ensure backend is reachable at ${backendBaseUrl || 'your configured backend URL'}.`} For local use run
+                {' '}`npm run backend`.
               </p>
             )}
             {researchStatus === 'completed' && !selectedResearch && (
               <p className="research-status-text research-success">Research complete. Select a result below to view the full report.</p>
+            )}
+            {researchStatus === 'canceled' && (
+              <p className="research-status-text">Research was canceled.</p>
             )}
             <div className="research-batch-section">
               <p className="batch-label">Or scan multiple markets at once:</p>
